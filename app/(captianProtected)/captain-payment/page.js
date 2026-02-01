@@ -1,6 +1,13 @@
-import React from 'react'
+"use client";
+import React, { useState } from 'react';
 
-const page = () => {
+const Page = () => {
+    const [isActive, setIsActive] = useState(false);
+
+    const handleExpand = () => {
+        setIsActive(!isActive)
+    }
+
     return (
         <>
             <div className="bg-[#f6f7f8] pt-20 dark:bg-[#101922] font-display text-[#0d141b] dark:text-slate-100 min-h-screen">
@@ -70,77 +77,6 @@ const page = () => {
                                 <div className="absolute top-0 right-0 w-64 h-full bg-linear-to-l from-[#137fec]/5 to-transparent pointer-events-none">
                                 </div>
                             </section>
-                            {/* Data Visualization: Bar Chart */}
-                            <section className="bg-white dark:bg-[#1a2632] rounded-xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm">
-                                <div className="flex items-center justify-between mb-8">
-                                    <h3 className="font-bold text-lg">Daily Performance</h3>
-                                    <span className="text-xs text-[#4c739a]">Avg. $177.92 / day</span>
-                                </div>
-                                <div className="flex items-end justify-between h-48 gap-2 md:gap-4 pt-4">
-                                    {/* Mon */}
-                                    <div className="flex-1 flex flex-col items-center group">
-                                        <div className="w-full bg-[#137fec]/20 rounded-t-lg relative h-[65%] transition-all group-hover:bg-[#137fec]/40">
-                                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                                $145
-                                            </div>
-                                        </div>
-                                        <span className="mt-3 text-xs font-medium text-[#4c739a]">Mon</span>
-                                    </div>
-                                    {/* Tue */}
-                                    <div className="flex-1 flex flex-col items-center group">
-                                        <div className="w-full bg-[#137fec]/20 rounded-t-lg relative h-[80%] transition-all group-hover:bg-[#137fec]/40">
-                                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                                $190</div>
-                                        </div>
-                                        <span className="mt-3 text-xs font-medium text-[#4c739a]">Tue</span>
-                                    </div>
-                                    {/* Wed */}
-                                    <div className="flex-1 flex flex-col items-center group">
-                                        <div className="w-full bg-[#137fec]/20 rounded-t-lg relative h-[45%] transition-all group-hover:bg-[#137fec]/40">
-                                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                                $110
-                                            </div>
-                                        </div>
-                                        <span className="mt-3 text-xs font-medium text-[#4c739a]">Wed</span>
-                                    </div>
-                                    {/* Thu */}
-                                    <div className="flex-1 flex flex-col items-center group">
-                                        <div className="w-full bg-[#137fec]/20 rounded-t-lg relative h-[70%] transition-all group-hover:bg-[#137fec]/40">
-                                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                                $165
-                                            </div>
-                                        </div>
-                                        <span className="mt-3 text-xs font-medium text-[#4c739a]">Thu</span>
-                                    </div>
-                                    {/* Fri */}
-                                    <div className="flex-1 flex flex-col items-center group">
-                                        <div className="w-full bg-[#137fec] rounded-t-lg relative h-[95%] shadow-md">
-                                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                                $240
-                                            </div>
-                                        </div>
-                                        <span className="mt-3 text-xs font-bold text-[#137fec]">Fri</span>
-                                    </div>
-                                    {/* Sat */}
-                                    <div className="flex-1 flex flex-col items-center group">
-                                        <div className="w-full bg-[#137fec]/20 rounded-t-lg relative h-[85%] transition-all group-hover:bg-[#137fec]/40">
-                                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                                $210
-                                            </div>
-                                        </div>
-                                        <span className="mt-3 text-xs font-medium text-[#4c739a]">Sat</span>
-                                    </div>
-                                    {/* Sun */}
-                                    <div className="flex-1 flex flex-col items-center group">
-                                        <div className="w-full bg-[#137fec]/20 rounded-t-lg relative h-[60%] transition-all group-hover:bg-[#137fec]/40">
-                                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                                                $185
-                                            </div>
-                                        </div>
-                                        <span className="mt-3 text-xs font-medium text-[#4c739a]">Sun</span>
-                                    </div>
-                                </div>
-                            </section>
                             {/* Trip History Section */}
                             <section className="space-y-4 pb-12">
                                 <div className="flex items-center justify-between">
@@ -149,7 +85,7 @@ const page = () => {
                                 </div>
                                 {/* Trip Row 1 (Expanded Example) */}
                                 <div className="bg-white dark:bg-[#1a2632] rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                                    <div className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                    <div onClick={handleExpand} className="p-4 flex items-center justify-between cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                                         <div className="flex items-center gap-4">
                                             <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg text-slate-500">
                                                 <span className="material-symbols-outlined">schedule</span>
@@ -165,11 +101,11 @@ const page = () => {
                                                 <p className="text-[10px] text-green-600 font-bold uppercase tracking-tight">Completed
                                                 </p>
                                             </div>
-                                            <span className="material-symbols-outlined text-slate-400 rotate-180">expand_more</span>
+                                            <span className={`material-symbols-outlined text-slate-400 transition-transform ${isActive ? "rotate-180" : "rotate-0"}`}>expand_more</span>
                                         </div>
                                     </div>
                                     {/* Breakdown Panel */}
-                                    <div className="px-16 pb-6 pt-2 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800">
+                                    <div className={`px-16 bg-slate-50/50 dark:bg-slate-800/20 border-t border-slate-100 dark:border-slate-800 overflow-hidden transition-all duration-300 ease-in-out ${isActive ? "max-h-96 py-6 opacity-100" : "max-h-0 py-0 opacity-0"}`}>
                                         <div className="space-y-2 text-sm">
                                             <div className="flex justify-between">
                                                 <span className="text-[#4c739a]">Base Fare</span>
@@ -247,4 +183,4 @@ const page = () => {
     )
 }
 
-export default page
+export default Page
