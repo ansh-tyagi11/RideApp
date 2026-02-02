@@ -1,8 +1,48 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 const Page = () => {
     const [isActive, setIsActive] = useState(false);
+    const [input, setInput] = useState('');
+    const [debouncedInput, setDebouncedInput] = useState("");
+
+    const rides = [
+        {
+            rideId: "RID10234",
+            destination: "Connaught Place, Delhi",
+            date: "2026-02-01",
+            driver: "Amit Sharma",
+            fare: 320
+        },
+        {
+            rideId: "RID10235",
+            destination: "Bandra West, Mumbai",
+            date: "2026-01-29",
+            driver: "Rahul Verma",
+            fare: 540
+        },
+        {
+            rideId: "RID10236",
+            destination: "Electronic City, Bengaluru",
+            date: "2026-02-02",
+            driver: "Suresh Kumar",
+            fare: 410
+        }
+    ];
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedInput(input);
+        }, 500);
+
+        return () => clearTimeout(timer)
+    }, [input]);
+
+    const match = rides.filter(ride =>
+        ride.rideId.toLowerCase().includes(debouncedInput.toLowerCase()) ||
+        ride.destination.toLowerCase().includes(debouncedInput.toLowerCase()) ||
+        ride.date.includes(debouncedInput)
+    )
 
     const handleExpand = () => {
         setIsActive(!isActive)
@@ -35,16 +75,34 @@ const Page = () => {
                             </div>
                             {/* Top Navigation Bar */}
                             <header className="flex items-center justify-between dark:border-slate-800 py-8 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-10">
-                                <div className="flex items-center gap-4 flex-1">
-                                    <label className="flex items-center w-full max-w-md relative">
-                                        <span className="material-symbols-outlined absolute left-3 text-slate-400">search</span>
+                                <div className="flex flex-col gap-4 flex-1">
+                                    <label className="relative w-full max-w-md flex flex-col">
+                                        <span className="material-symbols-outlined absolute left-3 top-2 text-slate-400">search</span>
                                         <input
-                                            className="w-full h-10 pl-10 pr-4 rounded-lg border border-slate-300 bg-slate-100 dark:bg-slate-800 text-sm focus:border-[#137fec] focus:ring-2 focus:ring-[#137fec]/50 transition-all placeholder:text-slate-400"
+                                            type="search"
                                             placeholder="Search ride ID, destination, or date..."
+                                            className="w-full h-10 pl-10 pr-4 rounded-lg border border-slate-300 bg-slate-100 dark:bg-slate-800 text-sm focus:border-[#137fec] focus:ring-2 focus:ring-[#137fec]/50 transition-all placeholder:text-slate-400"
+                                            onChange={(e) => setInput(e.target.value)}
+                                            value={input}
                                         />
+                                        {/* Search Results Dropdown */}
+                                        {debouncedInput.trim() && (
+                                            <ul className="absolute top-full left-0 right-0 mt-1 max-h-64 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg z-50">
+                                                {match.length > 0 ? (
+                                                    match.map((item, index) => (
+                                                        <li key={index} className="px-4 py-2 hover:bg-[#137fec]/10 dark:hover:bg-[#137fec]/20 cursor-pointer rounded-md">
+                                                            <div className="text-sm font-semibold">{item.rideId}</div>
+                                                            <div className="text-xs text-slate-500 dark:text-slate-400">{item.destination} • {item.date}</div>
+                                                        </li>
+                                                    ))
+                                                ) : (
+                                                    <li className="px-4 py-2 text-slate-400 dark:text-slate-500 text-sm">No rides found</li>
+                                                )}
+                                            </ul>
+                                        )}
                                     </label>
-                                </div>
 
+                                </div>
                             </header>
                             {/* Filters (Chips) */}
                             <div className="flex gap-3 mb-8 overflow-x-auto pb-2 scrollbar-hide">
@@ -426,9 +484,6 @@ const Page = () => {
                         </div>
                     </main>
                 </div >
-
-
-
             </div >
         </>
     )
