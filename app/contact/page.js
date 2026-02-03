@@ -1,7 +1,6 @@
 "use client";
 import { forContact } from "@/actions/useractions";
 import React, { useState } from "react";
-import { set } from "react-hook-form";
 import { toast } from "react-toastify";
 
 export default function Contact() {
@@ -118,6 +117,7 @@ export default function Contact() {
                                             name="topic"
                                             value={form.topic}
                                             onChange={handleChange}
+                                            required
                                         >
                                             <option disabled value="">Select a topic</option>
                                             <option value="trip">Issue with a trip</option>
@@ -147,7 +147,7 @@ export default function Contact() {
                                     </textarea>
                                 </div>
                                 {/* Submit Button */}
-                                <button onClick={contact} disabled={isSubmitting}
+                                <button disabled={isSubmitting} onSubmit={contact}
                                     className={`w-full h-12 bg-[#195de6] hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg shadow-[#195de6]/30 flex items-center justify-center gap-2 transition-all transform hover:-translate-y-0.5 active:translate-y-0 ${isSubmitting ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
                                     type="submit">
                                     <span>Send Message</span>
