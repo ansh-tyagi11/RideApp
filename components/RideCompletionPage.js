@@ -1,39 +1,41 @@
 "use client";
 import React from 'react';
+//import Script from 'next/script';
 
 export default function RideCompletion() {
 
-    const openRazorpay = async (amount) => {
-        let a = await initiate(amount, paymentForm, currentUser.username);
-        let orderId = a.id;
-        var options = {
-            key: currentUser.razorPayId,
-            amount: amount,
-            currency: "INR",
-            name: `${currentUser.username}`,
-            description: "Test Transaction",
-            image: `${image}`,
-            order_id: orderId,
-            callback_url: "http://localhost:3000/api/razorpay",
-            prefill: {
-                name: "User",
-                email: "user@example.com",
-                contact: "9999999999",
-            },
-            notes: {
-                address: "Razorpay Corporate Office",
-            },
-            theme: {
-                color: "#3399cc",
-            },
-        };
+    // const openRazorpay = async (amount) => {
+    //     let a = await initiate(amount, paymentForm, currentUser.username);
+    //     let orderId = a.id;
+    //     var options = {
+    //         key: currentUser.razorPayId,
+    //         amount: amount,
+    //         currency: "INR",
+    //         name: `${currentUser.username}`,
+    //         description: "Test Transaction",
+    //         image: `${image}`,
+    //         order_id: orderId,
+    //         callback_url: "http://localhost:3000/api/razorpay",
+    //         prefill: {
+    //             name: "User",
+    //             email: "user@example.com",
+    //             contact: "9999999999",
+    //         },
+    //         notes: {
+    //             address: "Razorpay Corporate Office",
+    //         },
+    //         theme: {
+    //             color: "#3399cc",
+    //         },
+    //     };
 
-        const rzp1 = new window.Razorpay(options);
-        rzp1.open();
-    };
+    //     const rzp1 = new window.Razorpay(options);
+    //     rzp1.open();
+    // };
 
     return (
         <>
+            <Script src="https://checkout.razorpay.com/v1/checkout.js" />
             <div className="font-display bg-[#f6f7f8] dark:bg-[#101a22] min-h-screen flex flex-col antialiased">
                 {/* Main Content Area */}
                 <main className="flex-1 flex items-center justify-center p-4 lg:p-8">
@@ -126,7 +128,7 @@ export default function RideCompletion() {
                                 <div className="grid grid-cols-4 gap-3">
                                     <button className="h-12 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-[#2b9dee] hover:bg-[#2b9dee]/5 hover:text-[#2b9dee] transition-all font-bold text-gray-700 dark:text-gray-300 text-sm">₹1</button>
                                     <button className="h-12 rounded-xl bg-[#2b9dee] text-white shadow-lg shadow-blue-500/30 font-bold text-sm border border-[#2b9dee]">₹3</button>
-                                    <button className="h-12 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-[#2b9dee] hover:bg-[#2b9dee]/5 hover:text-[#2b9dee] transition-all font-bold text-gray-700 dark:text-gray-300 text-sm" onClick={() => openRazorpay(5000)}>₹5</button>
+                                    <button className="h-12 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-[#2b9dee] hover:bg-[#2b9dee]/5 hover:text-[#2b9dee] transition-all font-bold text-gray-700 dark:text-gray-300 text-sm">₹5</button>
                                     <button className="h-12 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-[#2b9dee] hover:bg-[#2b9dee]/5 hover:text-[#2b9dee] transition-all font-bold text-gray-700 dark:text-gray-300 text-sm">Custom</button>
                                 </div>
                             </div>

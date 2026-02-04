@@ -8,6 +8,7 @@ import { sendEmail } from "@/lib/mailer";
 import passwordReset from "@/models/passwordReset";
 import crypto from "crypto";
 import { sendEmailContact } from "@/lib/mailerContact";
+import cloudinary from "@/lib/cloudinary";
 
 export const createUser = async (data) => {
 
@@ -219,4 +220,40 @@ export async function forContact(form) {
     if (!result) return { success: false, message: "Sorry, we couldn't send your message. Please try again later." }
 
     return { success: true, message: "Thank you for contacting us! Your message has been sent successfully. We will get back to you soon." }
+}
+
+export async function forUploadImage(formData) {
+    try {
+        const file = formData.get("image");
+
+        if (!file || typeof file.arrayBuffer !== "function") {
+            return { success: false, message: "Invalid image" };
+        }
+
+        const buffer = Buffer.from(await file.arrayBuffer());
+
+        const uploadResult = await new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+                {
+                    folder: "uploads",
+                    resource_type: "image",
+                },
+                (error, result) => {
+                    if (error) reject(error);
+                    resolve(result);
+                }
+            ).end(buffer);
+        });
+        
+        console.log(uploadResult.secure_url)
+        return {
+            success: true,
+            url: uploadResult.secure_url,
+            public_id: uploadResult.public_id,
+        };
+
+    } catch (err) {
+        console.error(err);
+        return { success: false, message: "Upload failed" };
+    }
 }

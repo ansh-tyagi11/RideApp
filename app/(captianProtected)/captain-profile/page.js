@@ -1,7 +1,8 @@
 "use client";
-import React from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
+import { forUploadImage } from '@/actions/useractions';
 
 const page = () => {
     const {
@@ -11,6 +12,8 @@ const page = () => {
         reset,
         formState: { errors, isSubmitting }
     } = useForm();
+    const [preview, setPreview] = useState(null);
+    const [file, setFile] = useState(null);
 
     const currentPassword = watch("currentPassword");
     const newPassword = watch("newPassword");
@@ -42,6 +45,33 @@ const page = () => {
         reset();
     }
 
+    const handleImage = async (e) => {
+        const img = e.target.files[0];
+
+        if (!img) return;
+
+        if (!img.type.startsWith("image/")) {
+            toast.error("Only images allowed");
+            return;
+        }
+
+        if (img.size > 2 * 1024 * 1024) {
+            toast.error("Max 2MB allowed");
+            return;
+        }
+
+        setFile(img);
+        setPreview(URL.createObjectURL(img));
+    };
+
+    const uploadImage = async (e) => {
+        e.preventDefault();
+        console.log(file)
+        let res = await forUploadImage(file);
+
+        console.log(res)
+    }
+
     return (
         <>
             <div className="bg-[#f7f7f8] pt-20 dark:bg-[#17191c] min-h-screen text-[#101519] dark:text-gray-100">
@@ -51,13 +81,20 @@ const page = () => {
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div className="flex items-center gap-6">
                                 <div className="relative group">
-                                    <div className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-28 w-28 border-4 border-white shadow-md"
-                                        data-alt="Jonathan Miller profile photo"
-                                        style={{ backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuDtruoBpxtlV8AiQJHpN07gGsYMzzY-qU7xSuC1eVOATz-szuS0PC10gaIdh1c9Zur0AKejd_i4YsmIHEldPw2Xeg0LR2FLaFlPTGQL-qd8ZJjSQjAJ-txXS3iQGrLOHfb-zDu_4tv_TA4ZHmNkp5aza4xgRMyZQP4eCajDT37R2hoKUs0Rw7C7SRfF96_OWk84x5zXOQQtJJma11lApwUO6amxdMzAJMte5yfISQda0jNfeF20in1gbqWIBvu-G_KvZ8lv6ekFh7je")` }}>
-                                    </div>
-                                    <button className="absolute bottom-0 right-0 bg-[#1c486e] text-white p-2 rounded-full shadow-lg border-2 border-white">
-                                        <span className="material-symbols-outlined text-sm">photo_camera</span>
-                                    </button>
+                                    <form className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-32 w-32 border-4 border-white shadow-md">
+                                        <input
+                                            id="fileInput"
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handleImage}
+                                            hidden
+                                        />
+                                        {preview && <img src={preview} className="w-32 h-32 rounded-full object-cover" />}
+                                        <label htmlFor="fileInput" className="absolute bottom-0 right-0 bg-[#1c486e] text-white p-2 rounded-full shadow-lg border-2 border-white">
+                                            <span className="material-symbols-outlined text-sm">photo_camera</span>
+                                        </label>
+                                        <button onSubmit={uploadImage}>Submit</button>
+                                    </form>
                                 </div>
                                 <div>
                                     <h2 className="text-2xl font-extrabold tracking-tight">Jonathan Miller</h2>
