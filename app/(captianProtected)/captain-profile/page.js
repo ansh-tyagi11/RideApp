@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
-import { forUploadImage } from '@/actions/useractions';
+import imageCompression from "browser-image-compression";
 
 const page = () => {
     const {
@@ -14,6 +14,7 @@ const page = () => {
     } = useForm();
     const [preview, setPreview] = useState(null);
     const [file, setFile] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
 
     const currentPassword = watch("currentPassword");
     const newPassword = watch("newPassword");
@@ -64,12 +65,37 @@ const page = () => {
         setPreview(URL.createObjectURL(img));
     };
 
-    const uploadImage = async (e) => {
-        e.preventDefault();
-        console.log(file)
-        let res = await forUploadImage(file);
+    const uploadImage = async () => {
+        if (!file) {
+            toast.error("Please select an image first.");
+            return;
+        }
 
-        console.log(res)
+        setSubmitting(true);
+
+        const compressedFile = await imageCompression(file, {
+            maxSizeMB: 0.5,
+            maxWidthOrHeight: 1024,
+            useWebWorker: true,
+        });
+
+        const formData = new FormData();
+        formData.append("image", compressedFile);
+        formData.append("email", "at9773@srmist.edu.in");
+
+        const response = await fetch("/api/uploadImage", {
+            method: "POST",
+            body: formData,
+        });
+
+        const res = await response.json();
+
+        if (response.ok && res?.success) {
+            toast.success("Image uploaded successfully.");
+        } else {
+            toast.error(res?.message || "Upload failed.");
+        }
+        setSubmitting(false);
     }
 
     return (
@@ -81,7 +107,7 @@ const page = () => {
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div className="flex items-center gap-6">
                                 <div className="relative group">
-                                    <form className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-32 w-32 border-4 border-white shadow-md">
+                                    <form className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-32 w-32 border-4 border-white shadow-[0_0_10px_rgba(0,0,0,0.35)]">
                                         <input
                                             id="fileInput"
                                             type="file"
@@ -90,10 +116,9 @@ const page = () => {
                                             hidden
                                         />
                                         {preview && <img src={preview} className="w-32 h-32 rounded-full object-cover" />}
-                                        <label htmlFor="fileInput" className="absolute bottom-0 right-0 bg-[#1c486e] text-white p-2 rounded-full shadow-lg border-2 border-white">
+                                        <label htmlFor="fileInput" className="absolute bottom-0 right-0 bg-[#1c486e] text-white px-2.5 py-2 pb-1 rounded-full shadow-lg border-2 border-white">
                                             <span className="material-symbols-outlined text-sm">photo_camera</span>
                                         </label>
-                                        <button onSubmit={uploadImage}>Submit</button>
                                     </form>
                                 </div>
                                 <div>
@@ -112,9 +137,20 @@ const page = () => {
                                     </div>
                                 </div>
                             </div>
-                            <button className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg border border-[#d3dce4] bg-white dark:bg-gray-800 dark:border-gray-700 text-sm font-bold hover:bg-gray-50 transition-all">
-                                <span className="material-symbols-outlined text-[18px]">edit</span>
-                                Edit Profile
+                            <button disabled={submitting} onClick={uploadImage} className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg border border-[#d3dce4] bg-white dark:bg-gray-800 dark:border-gray-700 text-sm font-bold hover:bg-gray-50 transition-all ${submitting ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-gray-50"}`}>
+                                {submitting ? (
+                                    <>
+                                        <span className="animate-spin material-symbols-outlined text-[18px]">
+                                            progress_activity
+                                        </span>
+                                        Uploading...
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="material-symbols-outlined text-[18px]">edit</span>
+                                        Upload Image
+                                    </>
+                                )}
                             </button>
                         </div>
                     </div>
@@ -400,9 +436,9 @@ const page = () => {
                             </div>
                         </div>
                     </form>
-                </main>
+                </main >
 
-            </div>
+            </div >
         </>
     )
 }

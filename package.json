@@ -10,6 +10,7 @@
   "dependencies": {
     "@react-google-maps/api": "^2.20.8",
     "argon2": "^0.44.0",
+    "browser-image-compression": "^2.0.2",
     "cloudinary": "^2.9.0",
     "mongodb": "^7.0.0",
     "mongoose": "^9.0.2",

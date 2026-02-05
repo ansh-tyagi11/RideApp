@@ -1,7 +1,8 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
+import imageCompression from "browser-image-compression";
 
 export default function UserProfileSettings() {
   const {
@@ -14,6 +15,10 @@ export default function UserProfileSettings() {
 
   const currentPassword = watch("currentPassword");
   const newPassword = watch("newPassword");
+
+  const [preview, setPreview] = useState(null);
+  const [file, setFile] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const onSubmit = async (data) => {
     let res = await fetch("/api/userProfileUpdate", {
@@ -29,6 +34,57 @@ export default function UserProfileSettings() {
     reset()
   }
 
+  const handleImage = async (e) => {
+    const img = e.target.files[0];
+
+    if (!img) return;
+
+    if (!img.type.startsWith("image/")) {
+      toast.error("Only images allowed");
+      return;
+    }
+
+    if (img.size > 2 * 1024 * 1024) {
+      toast.error("Max 2MB allowed");
+      return;
+    }
+
+    setFile(img);
+    setPreview(URL.createObjectURL(img));
+  };
+
+  const uploadImage = async () => {
+    if (!file) {
+      toast.error("Please select an image first.");
+      return;
+    }
+
+    setSubmitting(true);
+
+    const compressedFile = await imageCompression(file, {
+      maxSizeMB: 0.5,
+      maxWidthOrHeight: 1024,
+      useWebWorker: true,
+    });
+
+    const formData = new FormData();
+    formData.append("image", compressedFile);
+    formData.append("email", "at9773@srmist.edu.in");
+
+    const response = await fetch("/api/uploadImage", {
+      method: "POST",
+      body: formData,
+    });
+
+    const res = await response.json();
+
+    if (response.ok && res?.success) {
+      toast.success("Image uploaded successfully.");
+    } else {
+      toast.error(res?.message || "Upload failed.");
+    }
+    setSubmitting(false);
+  }
 
   return (
     <>
@@ -36,9 +92,42 @@ export default function UserProfileSettings() {
         {/* Main Content */}
         <main className="flex-1 py-8">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col gap-2 mb-8">
-              <h2 className="text-3xl font-bold tracking-tight text-slate-900 dark:text-white">Settings</h2>
-              <p className="text-slate-500 dark:text-slate-400">Manage your account preferences and personal details.</p>
+            <div className="flex flex-col md:flex-row md:items-center rounded-2xl justify-between gap-6 bg-[#ffffff] dark:bg-[#1a2430] shadow-sm border border-slate-200 dark:border-slate-800 p-6 mb-8">
+              <div className="flex items-center gap-6">
+                <div className="relative group">
+                  <form className="bg-center bg-no-repeat aspect-square bg-cover bg-gray-200 rounded-full h-32 w-32 border-4 border-white shadow-[0_0_10px_rgba(0,0,0,0.35)]">
+                    <input
+                      id="fileInput"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImage}
+                      hidden
+                    />
+                    {preview && <img src={preview} className="w-32 h-32 rounded-full object-cover" />}
+                    <label htmlFor="fileInput" className="absolute bottom-0 right-0 bg-[#1c486e] text-white px-2.5 py-2 pb-1 rounded-full shadow-lg border-2 border-white">
+                      <span className="material-symbols-outlined text-sm">photo_camera</span>
+                    </label>
+                  </form>
+                </div>
+                <div>
+                  <h2 className="text-2xl font-extrabold tracking-tight">Jonathan Miller</h2>
+                </div>
+              </div>
+              <button disabled={submitting} onClick={uploadImage} className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg border border-[#d3dce4] bg-white dark:bg-gray-800 dark:border-gray-700 text-sm font-bold hover:bg-gray-50 transition-all ${submitting ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-gray-50"}`}>
+                {submitting ? (
+                  <>
+                    <span className="animate-spin material-symbols-outlined text-[18px]">
+                      progress_activity
+                    </span>
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[18px]">edit</span>
+                    Upload Image
+                  </>
+                )}
+              </button>
             </div>
             <div>
               {/* Main Form Area */}
