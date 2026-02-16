@@ -21,6 +21,7 @@ export default function UserProfileSettings() {
   const [submitting, setSubmitting] = useState(false);
 
   const onSubmit = async (data) => {
+    if (Object.values(data).every(value => value === "")) return toast.error("Please fill at least one field to update.");
     let res = await fetch("/api/userProfileUpdate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },

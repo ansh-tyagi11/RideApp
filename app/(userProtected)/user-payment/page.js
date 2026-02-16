@@ -1,31 +1,64 @@
-import React from 'react';
+"use client";
+import React, { useState, useEffect } from 'react';
 
 const page = () => {
+    const [input, setInput] = useState('');
+    const [debounced, setDebounced] = useState('');
+
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebounced(input)
+        }, 500)
+
+        return () => clearTimeout(timer)
+    }, [input])
+
+    const rides = [
+        {
+            destination: "Connaught Place, Delhi",
+            date: "2026-02-01",
+        },
+        {
+            destination: "Bandra West, Mumbai",
+            date: "2026-01-29",
+        },
+        {
+            destination: "Electronic City, Bengaluru",
+            date: "2026-02-02",
+        }
+    ];
+
+    const match = rides.filter(ride =>
+        ride.destination.toLowerCase().includes(input.toLowerCase()) ||
+        ride.date.includes(input)
+    )
+
+
     return (
         <>
             <div className="bg-[#f6f6f8] pt-20 dark:bg-[#101622] text-[#111318] dark:text-white overflow-hidden h-screen flex flex-col md:flex-row">
                 {/* Main Content Wrapper */}
                 <main className="flex-1 flex flex-col h-full overflow-hidden bg-[#f6f6f8] dark:bg-[#101622] relative">
-                    {/* Top Header Area */}
-                    <header className="hidden md:flex items-center justify-between px-8 py-5 bg-[#f6f6f8] dark:bg-[#101622] border-b border-transparent shrink-0">
-                        <div>
-                            <p className="text-sm text-[#616f89] dark:text-gray-400">Welcome back, Alex</p>
-                            <h2 className="text-[#111318] dark:text-white text-2xl font-bold leading-tight">Payment History</h2>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1a202c] border border-[#dbdfe6] dark:border-gray-700 rounded-lg text-sm font-medium text-[#111318] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
-                                <span className="material-symbols-outlined text-[20px]">cloud_download</span>
-                                Download Statement
-                            </button>
-                            <button className="relative p-2 rounded-full bg-white dark:bg-[#1a202c] text-[#111318] dark:text-white border border-[#dbdfe6] dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
-                                <span className="material-symbols-outlined">notifications</span>
-                                <span className="absolute top-2 right-2 size-2 bg-red-500 rounded-full border border-white dark:border-[#1a202c]"></span>
-                            </button>
-                        </div>
-                    </header>
                     {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto p-4 md:p-8">
+                    <div className="flex-1 overflow-y-auto p-4 px-8 md:p-8">
                         <div className="max-w-250 mx-auto flex flex-col gap-8 pb-10">
+                        {/* Top Header Area */}
+                        <header className="hidden md:flex items-center justify-between py-5 bg-[#f6f6f8] dark:bg-[#101622] border-b border-transparent shrink-0">
+                            <div>
+                                <h2 className="text-[#111318] dark:text-white text-2xl font-bold leading-tight">Payment History</h2>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1a202c] border border-[#dbdfe6] dark:border-gray-700 rounded-lg text-sm font-medium text-[#111318] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+                                    <span className="material-symbols-outlined text-[20px]">cloud_download</span>
+                                    Download Statement
+                                </button>
+                                <button className="relative p-2 rounded-full bg-white dark:bg-[#1a202c] text-[#111318] dark:text-white border border-[#dbdfe6] dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+                                    <span className="material-symbols-outlined">notifications</span>
+                                    <span className="absolute top-2 right-2 size-2 bg-red-500 rounded-full border border-white dark:border-[#1a202c]"></span>
+                                </button>
+                            </div>
+                        </header>
                             {/* Page Heading & Context (Mobile Only) */}
                             <div className="md:hidden">
                                 <p className="text-[#111318] dark:text-white text-2xl font-black leading-tight mb-2">
@@ -107,8 +140,24 @@ const page = () => {
                                     <input
                                         className="pl-10 pr-4 py-2 w-full sm:w-64 h-9 rounded-lg bg-white dark:bg-[#1a202c] border border-[#dbdfe6] dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-[#135bec]/50 text-[#111318] dark:text-white placeholder:text-gray-400"
                                         placeholder="Search by date or location"
-                                        type="text"
+                                        type="search"
+                                        value={input}
+                                        onChange={(e) => setInput(e.target.value)}
                                     />
+                                    {debounced.trim() && (
+                                        <ul className="absolute top-full left-0 right-0 mt-1 max-h-64 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg z-50">
+                                            {match.length > 0 ? (
+                                                match.map((item, index) => (
+                                                    <li key={index} className="px-4 py-2 hover:bg-[#137fec]/10 dark:hover:bg-[#137fec]/20 cursor-pointer rounded-md">
+                                                        <div className="text-sm font-semibold">{item.rideId}</div>
+                                                        <div className="text-xs text-slate-500 dark:text-slate-400">{item.destination} • {item.date}</div>
+                                                    </li>
+                                                ))
+                                            ) : (
+                                                <li className="px-4 py-2 text-slate-400 dark:text-slate-500 text-sm">No rides found</li>
+                                            )}
+                                        </ul>
+                                    )}
                                 </div>
                             </div>
                             {/* Transaction List */}

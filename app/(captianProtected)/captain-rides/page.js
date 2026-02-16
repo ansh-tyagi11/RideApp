@@ -120,10 +120,10 @@ const Page = () => {
                                 </button>
                             </div>
                             {/* Ride Cards List */}
-                            <div className="grid gap-6">
+                            <div className="flex-col flex gap-6">
                                 {/* Ride Card 1 (Completed) */}
                                 <div className="bg-white dark:bg-slate-900 rounded-xl p-5 shadow-sm border border-slate-100 dark:border-slate-800 hover:border-[#137fec]/40 transition-all flex flex-col lg:flex-col gap-6">
-                                    <div className="flex lg:flex-row gap-6">
+                                    <div className="flex lg:flex-row flex-col gap-6">
                                         <div className="w-full lg:w-48 h-32 lg:h-auto bg-center bg-no-repeat bg-cover rounded-lg overflow-hidden shrink-0 border border-slate-100 dark:border-slate-800"
                                             data-alt="Map showing a city route from downtown to airport" data-location="Dubai, UAE"
                                             style={{ backgroundImage: `url("https://lh3.googleusercontent.com/aida-public/AB6AXuA4TXpQ_w5zchUC4uhnPZYEb_A2sKtCNhEiJ6mTsHGwoPleSBLOyYUyGvgL8iow4_IBW1b6nRMwi78CRxduHWa_yjfEywSeyKOHAdG1iRu4rSFYFmNCueeGQgtMIGj4SNgE_aDkrGmv2ggIW_2guTeEgwpHbi5hWpNTmsm7YikXlVrTpzD9XvmjQNorKuHDr_0fBX75iPX4wUfATiHsOiKjKylB9balP1_Bn4h9zDoxx7Tg4dxwTyqeaUB10BhhgOnVKcAYra_dejQ")` }}>
@@ -483,8 +483,8 @@ const Page = () => {
                             </div>
                         </div>
                     </main>
-                </div >
-            </div >
+                </div>
+            </div>
         </>
     )
 }

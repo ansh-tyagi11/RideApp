@@ -5,7 +5,7 @@ const page = () => {
         <>
             <div className="bg-[#f6f7f8] dark:bg-[#101622] text-[#111318] dark:text-white font-display min-h-screen flex flex-col">
                 {/* Main Content */}
-                <main className="flex-1 w-full max-w-4xl mx-auto px-4 py-8 md:px-6 md:py-30">
+                <main className="flex-1 w-full max-w-4xl mx-auto px-8 py-28 md:px-6 md:py-30">
                     {/* Page Header */}
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
                         <div>
