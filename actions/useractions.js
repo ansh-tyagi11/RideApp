@@ -9,6 +9,8 @@ import passwordReset from "@/models/passwordReset";
 import crypto from "crypto";
 import { sendEmailContact } from "@/lib/mailerContact";
 import cloudinary from "@/lib/cloudinary";
+import Session from "@/models/Session";
+import { cookies } from "next/headers";
 
 export const createUser = async (data) => {
 
@@ -63,16 +65,22 @@ export default async function verifyOtpId(email, otpId) {
 export const verifyOtp = async (email, otp) => {
     await connectDB();
 
+    const cookieStore = await cookies();
+    const sessionId = crypto.randomBytes(32).toString("hex");
+    const sessionIdDb = crypto.createHash("sha256").update(sessionId).digest("hex");
+    let isNewUser = false;
+
     let otpRecord = await otpStore.findOne({ email, otp })
 
     if (!otpRecord) return { error: "Invalid OTP" };
 
     if (otpRecord.expiresAt < Date.now()) return { error: "OTP expired." };
 
-    const existingUser = await User.findOne({ email });
+    let existingUser = await User.findOne({ email });
 
     if (!existingUser) {
-        await User.create({
+        isNewUser = true;
+        existingUser = await User.create({
             email: otpRecord.email,
             name: otpRecord.name,
             signUp: {
@@ -83,11 +91,27 @@ export const verifyOtp = async (email, otp) => {
         });
 
         await otpStore.deleteMany({ email });
-        return { success: true, message: "OTP verified successfully! Your account is now active." }
     }
 
+    await Session.findOneAndUpdate(
+        { userId: existingUser._id },
+        {
+            sessionId: sessionIdDb,
+            expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+        },
+        { upsert: true }
+    )
+
+    cookieStore.set('sessionId', sessionId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60,
+        path: "/",
+    })
+
     await otpStore.deleteMany({ email });
-    return { success: true, message: "Login successfull." }
+    return { success: true, message: isNewUser ? "OTP verified successfully! Your account is now active." : "Login successfull." }
 }
 
 export async function login(data) {
@@ -244,7 +268,7 @@ export async function forUploadImage(formData) {
                 }
             ).end(buffer);
         });
-        
+
         console.log(uploadResult.secure_url)
         return {
             success: true,
