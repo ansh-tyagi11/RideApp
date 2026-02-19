@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-export default function useUser() {
+export default function useCaptain() {
     const [user, setUser] = useState("");
     const [loading, setLoading] = useState(true);
 

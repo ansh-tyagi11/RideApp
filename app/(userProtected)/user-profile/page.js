@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "react-toastify";
 import imageCompression from "browser-image-compression";
+import useUser from "@/hooks/useUser";
 
 export default function UserProfileSettings() {
   const {
@@ -19,13 +20,14 @@ export default function UserProfileSettings() {
   const [preview, setPreview] = useState(null);
   const [file, setFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const { user, loading } = useUser();
 
   const onSubmit = async (data) => {
     if (Object.values(data).every(value => value === "")) return toast.error("Please fill at least one field to update.");
     let res = await fetch("/api/userProfileUpdate", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: "at9773@srmist.edu.in", data })
+      body: JSON.stringify({ email: user.email, data })
     });
     if (res.ok) {
       toast.success("Profile updated successfully!");
@@ -70,7 +72,7 @@ export default function UserProfileSettings() {
 
     const formData = new FormData();
     formData.append("image", compressedFile);
-    formData.append("email", "at9773@srmist.edu.in");
+    formData.append("email", user.email);
 
     const response = await fetch("/api/uploadImage", {
       method: "POST",
@@ -87,6 +89,26 @@ export default function UserProfileSettings() {
     setSubmitting(false);
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <span className="animate-spin material-symbols-outlined text-4xl text-[#137fec]">
+          progress_activity
+        </span>
+      </div>
+    );
+  }
+
+  const handleCancel = () => {
+    reset({
+      tel: user.phone,
+      currentPassword: "",
+      newPassword: ""
+    });
+    setPreview(null);
+    setFile(null);
+  };
+
   return (
     <>
       <div className="bg-[#f6f7f8] dark:bg-[#101922] pt-16 min-h-screen flex flex-col font-display text-slate-900 dark:text-slate-100 transition-colors duration-200">
@@ -96,7 +118,7 @@ export default function UserProfileSettings() {
             <div className="flex flex-col md:flex-row md:items-center rounded-2xl justify-between gap-6 bg-[#ffffff] dark:bg-[#1a2430] shadow-sm border border-slate-200 dark:border-slate-800 p-6 mb-8">
               <div className="flex items-center gap-6">
                 <div className="relative group">
-                  <form className="bg-center bg-no-repeat aspect-square bg-cover bg-gray-200 rounded-full h-32 w-32 border-4 border-white shadow-[0_0_10px_rgba(0,0,0,0.35)]">
+                  <form className="rounded-full h-32 w-32 border-4 border-white">
                     <input
                       id="fileInput"
                       type="file"
@@ -104,14 +126,15 @@ export default function UserProfileSettings() {
                       onChange={handleImage}
                       hidden
                     />
-                    {preview && <img src={preview} className="w-32 h-32 rounded-full object-cover" />}
+                    {preview && <img src={preview} className="bg-center bg-no-repeat aspect-square bg-cover bg-gray-200 rounded-full h-32 w-32 border-4 border-white shadow-[0_0_10px_rgba(0,0,0,0.35)] object-cover" />}
+                    {!preview && <img className="bg-center bg-no-repeat aspect-square bg-cover bg-gray-200 rounded-full h-32 w-32 border-4 border-white shadow-[0_0_10px_rgba(0,0,0,0.35)]" src={user.image || `https://ui-avatars.com/api/?name=${user.name}`} alt="user-Image" />}
                     <label htmlFor="fileInput" className="absolute bottom-0 right-0 bg-[#1c486e] text-white px-2.5 py-2 pb-1 rounded-full shadow-lg border-2 border-white">
                       <span className="material-symbols-outlined text-sm">photo_camera</span>
                     </label>
                   </form>
                 </div>
                 <div>
-                  <h2 className="text-2xl font-extrabold tracking-tight">Jonathan Miller</h2>
+                  <h2 className="text-2xl font-extrabold tracking-tight">{user.name}</h2>
                 </div>
               </div>
               <button disabled={submitting} onClick={uploadImage} className={`flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg border border-[#d3dce4] bg-white dark:bg-gray-800 dark:border-gray-700 text-sm font-bold hover:bg-gray-50 transition-all ${submitting ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-gray-50"}`}>
@@ -158,7 +181,7 @@ export default function UserProfileSettings() {
                             className="block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white py-2.5 pl-10 focus:border-[#137fec] focus:ring-2 focus:ring-blue-500 focus:outline-none sm:text-sm shadow-sm transition-shadow"
                             name="full-name"
                             type="text"
-                            value="John Doe"
+                            value={user.name}
                             readOnly
                           />
                         </div>
@@ -173,7 +196,7 @@ export default function UserProfileSettings() {
                             className="block w-full rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-900 dark:text-white py-2.5 pl-10 focus:border-[#137fec] focus:ring-2 focus:ring-blue-500 focus:outline-none sm:text-sm shadow-sm transition-shadow"
                             name="email"
                             type="email"
-                            value="john.doe@example.com"
+                            value={user.email}
                             readOnly
                           />
                         </div>
@@ -189,6 +212,7 @@ export default function UserProfileSettings() {
                             placeholder="Phone Number"
                             name="phone"
                             type="tel"
+                            defaultValue={user.phone}
                             autoComplete="tel"
                             {...register("tel", {
                               pattern: { value: /^\d{10}$/, message: "Phone Number must be exactly 10 digits and only numbers." }
@@ -326,7 +350,7 @@ export default function UserProfileSettings() {
                     </div>
                     {/* Action Buttons */}
                     <div className="flex items-center justify-end gap-4 pt-4">
-                      <button className="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      <button onClick={handleCancel} className="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                         type="button">Cancel</button>
                       <button disabled={isSubmitting} className={`mt-2 flex items-center justify-center overflow-hidden h-12 hover:bg-[#256af4]/90 leading-normal tracking-[0.015em] duration-200 px-6 py-2.5 rounded-xl bg-[#137fec] text-white text-sm font-bold shadow-md shadow-blue-500/30 transition-all hover:-translate-y-0.5" ${isSubmitting ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
                         type="submit" value="submit">Save Changes</button>

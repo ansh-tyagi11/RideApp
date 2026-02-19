@@ -16,11 +16,11 @@ export async function GET(req) {
 
     const user = await User.findOne({ _id: sessionRecord.userId });
 
-    const { name, email, phone } = user;
+    const { name, email, phone, image } = user;
 
     if (!user) {
         return new Response(JSON.stringify({ success: false, message: "User not found." }));
     }
 
-    return new Response(JSON.stringify({ success: true, name, email, phone }));
+    return new Response(JSON.stringify({ success: true, name, email, phone, image }));
 }

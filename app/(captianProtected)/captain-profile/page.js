@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'react-toastify';
 import imageCompression from "browser-image-compression";
+import useCaptain from '@/hooks/useCaptain';
 
 const page = () => {
     const {
@@ -18,6 +19,7 @@ const page = () => {
 
     const currentPassword = watch("currentPassword");
     const newPassword = watch("newPassword");
+    const { user, loading } = useCaptain();
 
     const formatPlate = (value) => {
         if (!value) return "";
@@ -98,6 +100,16 @@ const page = () => {
         setSubmitting(false);
     }
 
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <span className="animate-spin material-symbols-outlined text-4xl text-[#137fec]">
+                    progress_activity
+                </span>
+            </div>
+        );
+    }
+
     return (
         <>
             <div className="bg-[#f7f7f8] pt-20 dark:bg-[#17191c] min-h-screen text-[#101519] dark:text-gray-100">
@@ -107,7 +119,7 @@ const page = () => {
                         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                             <div className="flex items-center gap-6">
                                 <div className="relative group">
-                                    <form className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-32 w-32 border-4 border-white shadow-[0_0_10px_rgba(0,0,0,0.35)]">
+                                    <form className="rounded-full h-32 w-32">
                                         <input
                                             id="fileInput"
                                             type="file"
@@ -115,14 +127,15 @@ const page = () => {
                                             onChange={handleImage}
                                             hidden
                                         />
-                                        {preview && <img src={preview} className="w-32 h-32 rounded-full object-cover" />}
+                                        {preview && <img src={preview} className="bg-center bg-no-repeat aspect-square bg-cover  w-32 h-32 rounded-full object-cover border-4 border-white shadow-[0_0_10px_rgba(0,0,0,0.35)]" />}
+                                        {!preview && <img src={user.image || `https://ui-avatars.com/api/?name=${user.name}`} className="bg-center bg-no-repeat aspect-square bg-cover  w-32 h-32 rounded-full object-cover border-4 border-white shadow-[0_0_10px_rgba(0,0,0,0.35)]" />}
                                         <label htmlFor="fileInput" className="absolute bottom-0 right-0 bg-[#1c486e] text-white px-2.5 py-2 pb-1 rounded-full shadow-lg border-2 border-white">
                                             <span className="material-symbols-outlined text-sm">photo_camera</span>
                                         </label>
                                     </form>
                                 </div>
                                 <div>
-                                    <h2 className="text-2xl font-extrabold tracking-tight">Jonathan Miller</h2>
+                                    <h2 className="text-2xl font-extrabold tracking-tight">{user.name}</h2>
                                     <div className="flex flex-col gap-1 mt-1">
                                         <p className="text-[#57758e] dark:text-gray-400 font-medium flex items-center gap-1.5">
                                             <span className="material-symbols-outlined text-sm">verified_user</span> Professional
@@ -168,7 +181,7 @@ const page = () => {
                                         <input
                                             className="rounded-lg border border-[#d3dce4] dark:border-gray-700 dark:bg-gray-800 focus:ring-[#1c486e] focus:border-[#1c486e] px-4 py-3"
                                             type="text"
-                                            value="Name"
+                                            value={user.name}
                                             readOnly
                                         />
                                     </label>
@@ -177,7 +190,7 @@ const page = () => {
                                         <input
                                             className="rounded-lg border border-[#d3dce4] dark:border-gray-700 dark:bg-gray-800 focus:ring-[#1c486e] focus:border-[#1c486e] px-4 py-3"
                                             type="email"
-                                            value="xyz@gmail.com"
+                                            value={user.email}
                                             readOnly
                                         />
                                     </label>
@@ -188,6 +201,7 @@ const page = () => {
                                             placeholder="Phone Number"
                                             name="phone"
                                             type="tel"
+                                            defaultValue={user.phone}
                                             autoComplete="tel"
                                             {...register("tel", {
                                                 required: { pattern: { value: /^\d{10}$/, message: "Phone Number must be exactly 10 digits and only numbers." } },
