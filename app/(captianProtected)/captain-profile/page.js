@@ -143,9 +143,9 @@ const page = () => {
                                         </p>
                                         <div className="flex items-center gap-2">
                                             <span className="bg-yellow-50 text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-500 px-2 py-0.5 rounded text-sm font-bold flex items-center gap-1">
-                                                <span className="material-symbols-outlined text-[16px] fill-current">star</span> 4.95
+                                                <span className="material-symbols-outlined text-[16px] fill-current">star</span> {user.rating}
                                             </span>
-                                            <span className="text-xs text-[#57758e]">(1,240 trips)</span>
+                                            <span className="text-xs text-[#57758e]">{user.totalRides} trips </span>
                                         </div>
                                     </div>
                                 </div>
@@ -217,6 +217,7 @@ const page = () => {
                                             className="rounded-lg border border-[#d3dce4] dark:border-gray-700 dark:bg-gray-800 focus:ring-[#1c486e] focus:border-[#1c486e] px-4 py-3"
                                             type="text"
                                             placeholder="Residential Address"
+                                            defaultValue={user.address}
                                             name="address"
                                             {...register("address")}
                                         />
@@ -243,6 +244,7 @@ const page = () => {
                                                 type="text"
                                                 name="vehicleModel"
                                                 placeholder="Vehicle Model and Year"
+                                                defaultValue={user.model}
                                                 {...register("vehicleModel")}
                                             />
                                             {errors.vehicleModel && <div className="text-xs text-red-500 dark:text-red-500">{errors.vehicleModel.message}</div>}
@@ -258,6 +260,7 @@ const page = () => {
                                             type="text"
                                             placeholder="License Plate Number"
                                             name="licencePlateNumber"
+                                            defaultValue={user.licenseNumber}
                                             {...register("licencePlateNumber", {
                                                 required: {
                                                     validate: (v) =>
@@ -281,6 +284,7 @@ const page = () => {
                                                 type="text"
                                                 placeholder="Vehicle Color"
                                                 name="vehicleColor"
+                                                defaultValue={user.vehicleColor}
                                                 {...register("vehicleColor")}
                                             />
                                             {errors.vehicleColor && (<p className="text-red-500 text-sm mt-1">{errors.vehicleColor.message}</p>)}
@@ -292,6 +296,7 @@ const page = () => {
                                         </span>
                                         <select
                                             className="w-full rounded-lg border border-[#d3dce4] dark:border-gray-700 dark:bg-gray-800 focus:ring-[#1c486e] focus:border-[#1c486e] px-4 py-3 pr-10"
+                                            defaultValue={user.seatingCapacity}
                                             {...register("seatingCapacity")}
                                         >
                                             <option value="2">2 Seats</option>
