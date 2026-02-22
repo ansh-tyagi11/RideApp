@@ -127,7 +127,7 @@ export default function UserProfileSettings() {
                       hidden
                     />
                     {preview && <img src={preview} className="bg-center bg-no-repeat aspect-square bg-cover bg-gray-200 rounded-full h-32 w-32 border-4 border-white shadow-[0_0_10px_rgba(0,0,0,0.35)] object-cover" />}
-                    {!preview && <img className="bg-center bg-no-repeat aspect-square bg-cover bg-gray-200 rounded-full h-32 w-32 border-4 border-white shadow-[0_0_10px_rgba(0,0,0,0.35)]" src={user.image || `https://ui-avatars.com/api/?name=${user.name}`} alt="user-Image" />}
+                    {!preview && user && (<img className="bg-center bg-no-repeat aspect-square bg-cover bg-gray-200 rounded-full h-32 w-32 border-4 border-white shadow-[0_0_10px_rgba(0,0,0,0.35)]" src={user.image || `https://ui-avatars.com/api/?name=${user.name}`} alt="user-profile" />)}
                     <label htmlFor="fileInput" className="absolute bottom-0 right-0 bg-[#1c486e] text-white px-2.5 py-2 pb-1 rounded-full shadow-lg border-2 border-white">
                       <span className="material-symbols-outlined text-sm">photo_camera</span>
                     </label>

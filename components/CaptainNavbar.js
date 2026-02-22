@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
+import useCaptain from '@/hooks/useCaptain';
 
 const captainNavbar = () => {
     const pathname = usePathname();
@@ -10,6 +11,18 @@ const captainNavbar = () => {
     const [isOpen, setIsOpen] = useState(false);
 
     const toggleSidebar = () => setIsOpen(!isOpen);
+    const { user, loading } = useCaptain();
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <span className="animate-spin material-symbols-outlined text-4xl text-[#137fec]">
+                    progress_activity
+                </span>
+            </div>
+        );
+    }
+
 
     return (
         <>
@@ -42,21 +55,31 @@ const captainNavbar = () => {
                             <button className="flex items-center justify-center w-11 h-11 bg-white/90 backdrop-blur rounded-full text-slate-700 hover:bg-white hover:text-[#2b9dee] shadow-sm transition-all">
                                 <span className="material-symbols-outlined">notifications</span>
                             </button>
-                            <div
+                            <img
                                 className="w-11 h-11 rounded-full bg-cover bg-center border-2 border-white shadow-sm cursor-pointer"
-                                style={{
-                                    backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBnWnXhqt2gJ1xjCWWALJmhPrDL_NhFbZ8lhBrwuOhzPnwJzg9Fsllee_IriCz6reqTw3czUCYd7XfsqQjcC6QR9zMNeMjEtdQ9WZqqSfuc38YTETwTw9a0i6qioDrwBmC03OgPP6snFDmmxB8lFu_5chKZT98nY__47e5GhAk--SX1EWd5Lhkqn_RDQaqFQjEi5D_uL48qu3PdZPuZWzgBgyHMKP3133XGmsRO_XXY7Zh_zwL5OZaTc5-msl0MxgBRb65QNZPA-UHT')"
-                                }}
+                                src={user.image || `https://ui-avatars.com/api/?name=${user.name}`}
                             />
                         </div>
                     </span>
                 </div>
                 <div className='md:hidden block pointer-events-auto'>
-                    <span onClick={toggleSidebar} className="fixed top-7 right-11 material-symbols-outlined cursor-pointer z-60"><img
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuBnWnXhqt2gJ1xjCWWALJmhPrDL_NhFbZ8lhBrwuOhzPnwJzg9Fsllee_IriCz6reqTw3czUCYd7XfsqQjcC6QR9zMNeMjEtdQ9WZqqSfuc38YTETwTw9a0i6qioDrwBmC03OgPP6snFDmmxB8lFu_5chKZT98nY__47e5GhAk--SX1EWd5Lhkqn_RDQaqFQjEi5D_uL48qu3PdZPuZWzgBgyHMKP3133XGmsRO_XXY7Zh_zwL5OZaTc5-msl0MxgBRb65QNZPA-UHT"
-                        alt="Menu"
-                        className="w-11 h-11 rounded-full bg-cover bg-center border-2 border-white shadow-sm cursor-pointer"
-                    /></span>
+                    <span onClick={toggleSidebar} className="fixed top-7 right-11 material-symbols-outlined cursor-pointer z-60">
+                        <span className='flex items-center justify-between gap-2'>
+                            <span className='fle justify-center items-center'>
+                                <div className={`${isOpen ? 'block text-xs w-full h-5' : 'hidden'}`}>
+                                    {user.name.toLowerCase()}
+                                </div>
+                                <div className={`${isOpen ? 'block text-xs w-full h-5 lowercase' : 'hidden'}`}>
+                                    {user.email.toLowerCase()}
+                                </div>
+                            </span>
+                            <img
+                                src={user.image || `https://ui-avatars.com/api/?name=${user.name}`}
+                                alt="captain-profile"
+                                className="w-11 h-11 rounded-full bg-cover bg-center border-2 border-white shadow-sm cursor-pointer"
+                            />
+                        </span>
+                    </span>
                     {isOpen && (<div className="h-screen fixed inset-0 bg-black/50 z-40" onClick={toggleSidebar} />)}
                     <aside className={`fixed top-0 right-0 h-screen justify-between w-64 flex bg-white flex-col shadow-xl pt-14 p-6 z-50 transform transition-transform duration-300 ${isOpen ? "translate-x-0" : "translate-x-full"}`}>
                         <nav className="flex flex-col gap-3 pt-10">

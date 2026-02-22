@@ -38,7 +38,7 @@ const page = () => {
         let res = await fetch("/api/captainProfileUpdate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: "at9773@srmist.edu.in", data })
+            body: JSON.stringify({ email: user.email, data })
         });
         if (res.ok) {
             toast.success(res.message || "Profile updated successfully.");
@@ -83,7 +83,7 @@ const page = () => {
 
         const formData = new FormData();
         formData.append("image", compressedFile);
-        formData.append("email", "at9773@srmist.edu.in");
+        formData.append("email", user.email);
 
         const response = await fetch("/api/uploadImage", {
             method: "POST",
@@ -260,7 +260,7 @@ const page = () => {
                                             type="text"
                                             placeholder="License Plate Number"
                                             name="licencePlateNumber"
-                                            defaultValue={user.licenseNumber}
+                                            defaultValue={user.licenceNumber}
                                             {...register("licencePlateNumber", {
                                                 required: {
                                                     validate: (v) =>
@@ -398,7 +398,7 @@ const page = () => {
                                             <p className="text-sm font-bold">Driving License</p>
                                             <p className="text-[12px] text-[#57758e] mt-1">Expires: 12 Nov 2026</p>
                                         </div>
-                                        <button className="w-full py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-xs font-bold hover:bg-gray-100 transition-colors">
+                                        <button type='button' className="w-full py-2 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md text-xs font-bold hover:bg-gray-100 transition-colors">
                                             Update File
                                         </button>
                                     </div>
@@ -416,7 +416,7 @@ const page = () => {
                                             <p className="text-sm font-bold">Vehicle Insurance</p>
                                             <p className="text-[12px] text-[#57758e] mt-1">Expires: 15 Oct 2024</p>
                                         </div>
-                                        <button className="w-full py-2 bg-[#1c486e] text-white rounded-md text-xs font-bold hover:bg-[#1c486e]/90 transition-colors">
+                                        <button type='button' className="w-full py-2 bg-[#1c486e] text-white rounded-md text-xs font-bold hover:bg-[#1c486e]/90 transition-colors">
                                             Renew Now
                                         </button>
                                     </div>
@@ -434,7 +434,7 @@ const page = () => {
                                             <p className="text-sm font-bold">Registration (RC)</p>
                                             <p className="text-[12px] text-[#57758e] mt-1">Not uploaded yet</p>
                                         </div>
-                                        <button className="w-full py-2 border-2 border-dashed border-[#1c486e]/40 text-[#1c486e] rounded-md text-xs font-bold hover:bg-[#1c486e]/5 transition-colors flex items-center justify-center gap-2">
+                                        <button type='button' className="w-full py-2 border-2 border-dashed border-[#1c486e]/40 text-[#1c486e] rounded-md text-xs font-bold hover:bg-[#1c486e]/5 transition-colors flex items-center justify-center gap-2">
                                             <span className="material-symbols-outlined text-[16px]">upload</span> Upload
                                         </button>
                                     </div>

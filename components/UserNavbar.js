@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
+import useUser from '@/hooks/useUser';
 
 const userNavbar = () => {
     const pathname = usePathname();
@@ -10,6 +11,7 @@ const userNavbar = () => {
     const [isOpen, setIsOpen] = useState(false);
 
     const toggleSidebar = () => setIsOpen(!isOpen);
+    const { user } = useUser();
     return (
         <>
             {/* Top Navigation */}
@@ -41,11 +43,9 @@ const userNavbar = () => {
                             <button className="flex items-center justify-center w-11 h-11 bg-white/90 backdrop-blur rounded-full text-slate-700 hover:bg-white hover:text-[#2b9dee] shadow-sm transition-all">
                                 <span className="material-symbols-outlined">notifications</span>
                             </button>
-                            <div
+                            <img
                                 className="w-11 h-11 rounded-full bg-cover bg-center border-2 border-white shadow-sm cursor-pointer"
-                                style={{
-                                    backgroundImage: "url('https://lh3.googleusercontent.com/aida-public/AB6AXuBnWnXhqt2gJ1xjCWWALJmhPrDL_NhFbZ8lhBrwuOhzPnwJzg9Fsllee_IriCz6reqTw3czUCYd7XfsqQjcC6QR9zMNeMjEtdQ9WZqqSfuc38YTETwTw9a0i6qioDrwBmC03OgPP6snFDmmxB8lFu_5chKZT98nY__47e5GhAk--SX1EWd5Lhkqn_RDQaqFQjEi5D_uL48qu3PdZPuZWzgBgyHMKP3133XGmsRO_XXY7Zh_zwL5OZaTc5-msl0MxgBRb65QNZPA-UHT')"
-                                }}
+                                src={user.image || `https://ui-avatars.com/api/?name=${user.name}`}
                             />
                         </div>
                     </span>
