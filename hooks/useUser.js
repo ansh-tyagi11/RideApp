@@ -17,9 +17,9 @@ export default function useUser() {
             try {
                 const res = await fetch("/api/verifyUser");
                 const data = await res.json();
-                console.log("User data fetched:", data);
+                // console.log("User data fetched:", data);
                 setUser(data);
-                console.log("User state updated:", user);
+                // console.log("User state updated:", user);
             } catch (error) {
                 console.error("Error fetching user:", error);
             } finally {

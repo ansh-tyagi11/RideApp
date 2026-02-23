@@ -63,15 +63,13 @@ const captainNavbar = () => {
                     </span>
                 </div>
                 <div className='md:hidden block pointer-events-auto'>
-                    <span onClick={toggleSidebar} className="fixed top-7 right-11 material-symbols-outlined cursor-pointer z-60">
-                        <span className='flex items-center justify-between gap-2'>
-                            <span className='fle justify-center items-center'>
-                                <div className={`${isOpen ? 'block text-xs w-full h-5' : 'hidden'}`}>
-                                    {user.name.toLowerCase()}
+                    <span onClick={toggleSidebar} className="fixed top-7 right-11 cursor-pointer z-60">
+                        <span className='flex items-center justify-between'>
+                            <span className='flex-col w-38'>
+                                <div className={`${isOpen ? 'flex text-sm font-semibold m-2 w-full h-5 text-slate-600 border' : 'hidden'}`}>
+                                    Hi, {user.name}
                                 </div>
-                                <div className={`${isOpen ? 'block text-xs w-full h-5 lowercase' : 'hidden'}`}>
-                                    {user.email.toLowerCase()}
-                                </div>
+                                <div className={`${isOpen ? 'block text-sm font-semibold w0 h-5 text-slate-600 break-normal border m-2' : 'hidden'}`}>{user.email}</div>
                             </span>
                             <img
                                 src={user.image || `https://ui-avatars.com/api/?name=${user.name}`}

@@ -17,7 +17,7 @@ export async function GET(req) {
         if (!user) {
             return new Response(JSON.stringify({ success: false, message: "User not found." }));
         }
-        console.log("User found:", user);
+        
         let { name, email, phone, image, address } = user;
         let { isVerified, licenceNumber, rating, totalRides } = user.captain;
         let { vehicleColor, model, seatingCapacity } = user.captain.vehicle;
