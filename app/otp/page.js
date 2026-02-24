@@ -1,7 +1,7 @@
 "use client"
 import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, redirect } from 'next/navigation';
 import { toast } from 'react-toastify';
 import verifyOtpId from '@/actions/useractions';
 import { verifyOtp, resendSignupOtp } from '@/actions/useractions';
@@ -52,7 +52,10 @@ export default function OTPVerification() {
     const handleSubmit = async () => {
         let fullOtp = otp.join('');
         let verificationOtp = await verifyOtp(email, fullOtp)
-        if (verificationOtp.success) return toast.success(verificationOtp.message)
+        if (verificationOtp.success) {
+            redirect("/user-home");
+            return toast.success(verificationOtp.message)
+        }
     };
 
     const handleResend = async () => {

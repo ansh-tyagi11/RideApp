@@ -14,14 +14,30 @@ export async function GET(req) {
     if (session) {
         const userEmail = session.user.email;
         const user = await User.findOne({ email: userEmail });
-        if (!user) {
-            return new Response(JSON.stringify({ success: false, message: "User not found." }));
+        if (!user) return new Response(JSON.stringify({ success: false, message: "User not found." }));
+
+        let { name, email, phone, image, address, role } = user;
+        let captain = user.captain || {};
+        let vehicle = captain.vehicle || {};
+        if (role === "user") {
+            return new Response(JSON.stringify({ success: true, name, email, phone, image }));
         }
-        
-        let { name, email, phone, image, address } = user;
-        let { isVerified, licenceNumber, rating, totalRides } = user.captain;
-        let { vehicleColor, model, seatingCapacity } = user.captain.vehicle;
-        return new Response(JSON.stringify({ success: true, name, email, phone, address, image, isVerified, licenceNumber, rating, totalRides, vehicleColor, model, seatingCapacity }));
+        return new Response(JSON.stringify({
+            success: true,
+            name,
+            email,
+            phone,
+            address,
+            image,
+            role,
+            isVerified: captain.isVerified ?? false,
+            licenceNumber: captain.licenceNumber ?? "",
+            rating: captain.rating ?? 0,
+            totalRides: captain.totalRides ?? 0,
+            vehicleColor: vehicle.vehicleColor ?? "",
+            model: vehicle.model ?? "",
+            seatingCapacity: vehicle.seatingCapacity ?? ""
+        }));
     }
     const cookieStore = await cookies();
     let sessionId = cookieStore.get('sessionId');
@@ -32,14 +48,30 @@ export async function GET(req) {
     }
 
     const user = await User.findOne({ _id: sessionRecord.userId });
-
-    const { name, email, phone, image, address } = user;
-    const { isVerified, licenceNumber, rating, totalRides } = user.captain;
-    const { vehicleColor, model, seatingCapacity } = user.captain.vehicle;
-
     if (!user) {
         return new Response(JSON.stringify({ success: false, message: "User not found." }));
     }
 
-    return new Response(JSON.stringify({ success: true, name, email, phone, address, image, isVerified, licenceNumber, rating, totalRides, vehicleColor, model, seatingCapacity }));
+    const { name, email, phone, image, address, role } = user;
+    const captain = user.captain || {};
+    const vehicle = captain.vehicle || {};
+
+    if (role === "user") return new Response(JSON.stringify({ success: true, name, email, phone, image }));
+
+    return new Response(JSON.stringify({
+        success: true,
+        name,
+        email,
+        phone,
+        address,
+        image,
+        role,
+        isVerified: captain.isVerified ?? false,
+        licenceNumber: captain.licenceNumber ?? "",
+        rating: captain.rating ?? 0,
+        totalRides: captain.totalRides ?? 0,
+        vehicleColor: vehicle.vehicleColor ?? "",
+        model: vehicle.model ?? "",
+        seatingCapacity: vehicle.seatingCapacity ?? ""
+    }));
 }

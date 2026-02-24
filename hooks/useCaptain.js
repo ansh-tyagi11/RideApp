@@ -4,22 +4,17 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 
 export default function useCaptain() {
-    const [user, setUser] = useState("");
+    const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const { status } = useSession();
 
     useEffect(() => {
         const fetchUserData = async () => {
-            if (status === "unauthenticated") {
-                setLoading(false);
-                return;
-            }
+            if (status === "loading") return;
             try {
                 const res = await fetch("/api/verifyUser");
                 const data = await res.json();
-                console.log("User data fetched:", data);
-                setUser(data);
-                console.log("User state updated:", user);
+                setUser(data?.success ? data : null);
             } catch (error) {
                 console.error("Error fetching user:", error);
             } finally {
@@ -28,7 +23,7 @@ export default function useCaptain() {
         };
 
         fetchUserData();
-    }, []);
+    }, [status]);
 
     return { user, loading };
 }

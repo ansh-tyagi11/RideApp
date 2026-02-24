@@ -1,9 +1,10 @@
 "use client";
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { signOut } from 'next-auth/react';
+import { redirect, usePathname } from 'next/navigation';
+import { signOut, useSession } from 'next-auth/react';
 import useCaptain from '@/hooks/useCaptain';
+import { toast } from 'react-toastify';
 
 const captainNavbar = () => {
     const pathname = usePathname();
@@ -12,8 +13,48 @@ const captainNavbar = () => {
 
     const toggleSidebar = () => setIsOpen(!isOpen);
     const { user, loading } = useCaptain();
+    const { data: session } = useSession();
 
-    if (loading) {
+    const changeRole = async () => {
+        let res = await fetch("/api/captainProfileUpdate", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: user.email })
+        });
+
+        let data = await res.json();
+        toast.success(data.message)
+        redirect("/user-home");
+    }
+
+    const handleLogout = async () => {
+        if (session) {
+            signOut({ callbackUrl: "/login" });
+            toast.success("Logged out successfully.");
+            return;
+        }
+
+        let res = await fetch("/api/captainProfileUpdate", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+        });
+        if (!res.ok) {
+            toast.error("Logout failed");
+            return;
+        }
+
+        const data = await res.json();
+
+        if (data.success) {
+            toast.success(data.message);
+            router.push("/login");
+        } else {
+            toast.error(data.message);
+        }
+        redirect("/login");
+    }
+
+    if (loading || !user) {
         return (
             <div className="flex items-center justify-center h-screen">
                 <span className="animate-spin material-symbols-outlined text-4xl text-[#137fec]">
@@ -22,7 +63,6 @@ const captainNavbar = () => {
             </div>
         );
     }
-
 
     return (
         <>
@@ -51,7 +91,7 @@ const captainNavbar = () => {
                         </Link>
                     </nav>
                     <span className='md:block hidden'>
-                        <div className="flex items-center gap-3">
+                        <div className="group flex items-center gap-3">
                             <button className="flex items-center justify-center w-11 h-11 bg-white/90 backdrop-blur rounded-full text-slate-700 hover:bg-white hover:text-[#2b9dee] shadow-sm transition-all">
                                 <span className="material-symbols-outlined">notifications</span>
                             </button>
@@ -59,6 +99,21 @@ const captainNavbar = () => {
                                 className="w-11 h-11 rounded-full bg-cover bg-center border-2 border-white shadow-sm cursor-pointer"
                                 src={user.image || `https://ui-avatars.com/api/?name=${user.name}`}
                             />
+                            <div className='group-hover:block hover:block hidden absolute top-18 right-11 bg-[#f6f7f8] rounded-2xl p-4 shadow-lg w-62.5'>
+                                <button onClick={changeRole} className="cursor-pointer border text-sm font-semibold bg-white text-slate-800 m-2 ml-0 w-full p-3 rounded-xl shadow-sm">
+                                    Switch To Ride
+                                </button>
+                                <div className="text-sm font-semibold text-slate-800 bg-white m-2 ml-0 w-full p-3 rounded-xl shadow-sm">
+                                    Hi, {user.name}
+                                </div>
+                                <div className="text-sm font-semibold text-slate-800 bg-white m-2 mt-4 ml-0 w-full p-3 rounded-xl shadow-sm">
+                                    {user.email}
+                                </div>
+                                <button onClick={handleLogout} className="bg-white cursor-pointer flex items-center justify-center text-sm font-semibold text-slate-800 m-2 mt-4 ml-0 w-full p-3 rounded-xl shadow-sm hover:bg-[#2b9dee] hover:text-white transition-colors">
+                                    Log Out
+                                    <span className='material-symbols-outlined'>logout</span>
+                                </button>
+                            </div>
                         </div>
                     </span>
                 </div>
@@ -95,7 +150,10 @@ const captainNavbar = () => {
                                 Profile
                             </Link>
                         </nav>
-                        <button onClick={() => signOut({ callbackUrl: "/login" })} className="flex items-center justify-center gap-2 rounded-lg h-10 py-0.5 px-4 bg-blue-500 text-white text-sm font-bold hover:bg-blue-600 transition-colors">
+                        <button onClick={changeRole} className="flex items-center justify-center gap-2 rounded-lg h-10 py-0.5 px-4 bg-blue-500 text-white text-sm font-bold hover:bg-blue-600 transition-colors">
+                            Switch To Ride
+                        </button>
+                        <button onClick={handleLogout} className="flex items-center justify-center gap-2 rounded-lg h-10 py-0.5 px-4 bg-blue-500 text-white text-sm font-bold hover:bg-blue-600 transition-colors">
                             Log Out
                             <span className='material-symbols-outlined'>logout</span>
                         </button>

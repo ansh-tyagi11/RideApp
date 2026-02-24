@@ -44,3 +44,22 @@ export async function POST(req) {
     return new Response(JSON.stringify({ success: true, message: "Captain profile updated successfully." }));
 
 }
+
+export async function PUT(req) {
+    const { email } = await req.json();
+    await connectDB();
+
+    const user = await User.findOneAndUpdate({ email: email }, { $set: { role: "user" } }, { new: true });
+    return new Response(JSON.stringify({ success: true, message: "Role updated successfully." }));
+}
+
+export async function DELETE(req) {
+    const cookieStore = await cookies();
+    try {
+        cookieStore.delete("sessionId");
+    } catch (err) {
+        return new Response(JSON.stringify({ success: false, message: "Unable to log out. Please try again." }));
+    }
+
+    return new Response(JSON.stringify({ success: true, message: "Logged out successfully.", redirect: "/login" }));
+}

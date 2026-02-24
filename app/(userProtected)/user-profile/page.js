@@ -90,7 +90,7 @@ export default function UserProfileSettings() {
     setSubmitting(false);
   }
 
-  if (!user || loading) {
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <span className="animate-spin material-symbols-outlined text-4xl text-[#137fec]">
@@ -99,6 +99,8 @@ export default function UserProfileSettings() {
       </div>
     );
   }
+
+  if (!user) return null;
 
   const handleCancel = () => {
     reset({

@@ -22,6 +22,7 @@ export async function proxy(request) {
   }
 
   const isLoggedIn = session || sessionRecord;
+  const publicRoutes = ["/", "/login", "/signup"];
 
   // Extract role
   const role = user?.role;
@@ -37,9 +38,9 @@ export async function proxy(request) {
     return NextResponse.redirect(new URL("/user-home", request.url));
   }
 
-  // If not logged in → block protected routes
-  if (!isLoggedIn && pathname !== "/" && pathname === "/" && pathname === "/login" && pathname === "/signup") {
-    return NextResponse.redirect(new URL("/", request.url));
+  // If not logged in - block protected routes
+  if (!isLoggedIn && !publicRoutes.includes(pathname)) {
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   // Role protection

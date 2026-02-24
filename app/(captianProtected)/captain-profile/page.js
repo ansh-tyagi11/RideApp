@@ -100,7 +100,7 @@ const page = () => {
         setSubmitting(false);
     }
 
-    if (loading) {
+    if (loading || !user) {
         return (
             <div className="flex items-center justify-center h-screen">
                 <span className="animate-spin material-symbols-outlined text-4xl text-[#137fec]">
