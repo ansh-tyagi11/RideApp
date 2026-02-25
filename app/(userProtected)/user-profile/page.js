@@ -21,7 +21,6 @@ export default function UserProfileSettings() {
   const [file, setFile] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const { user, loading } = useUser();
-  console.log("User data in component:", user);
 
   const onSubmit = async (data) => {
     if (Object.values(data).every(value => value === "")) return toast.error("Please fill at least one field to update.");

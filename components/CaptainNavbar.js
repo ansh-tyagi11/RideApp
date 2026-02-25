@@ -47,7 +47,7 @@ const captainNavbar = () => {
 
         if (data.success) {
             toast.success(data.message);
-            router.push("/login");
+            redirect("/login");
         } else {
             toast.error(data.message);
         }

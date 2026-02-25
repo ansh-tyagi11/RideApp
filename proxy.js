@@ -26,7 +26,6 @@ export async function proxy(request) {
 
   // Extract role
   const role = user?.role;
-  console.log("User Role:", user?.role);
 
   const { pathname } = request.nextUrl;
 

@@ -1,7 +1,6 @@
 import connectDB from "@/db/connectDB";
 import User from "@/models/User";
 import { verifyPassword, hashedPassword } from "@/utils/generateOtp";
-import { redirect } from "next/dist/server/api-utils";
 import { cookies } from "next/headers";
 
 export async function POST(req) {

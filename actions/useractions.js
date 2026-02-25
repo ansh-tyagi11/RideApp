@@ -269,7 +269,6 @@ export async function forUploadImage(formData) {
             ).end(buffer);
         });
 
-        console.log(uploadResult.secure_url)
         return {
             success: true,
             url: uploadResult.secure_url,

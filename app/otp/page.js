@@ -53,8 +53,10 @@ export default function OTPVerification() {
         let fullOtp = otp.join('');
         let verificationOtp = await verifyOtp(email, fullOtp)
         if (verificationOtp.success) {
-            redirect("/user-home");
-            return toast.success(verificationOtp.message)
+            toast.success(verificationOtp.message)
+            return redirect("/user-home");
+        } else {
+            toast.error(verificationOtp.error)
         }
     };
 
