@@ -1,6 +1,7 @@
 "use client"
-import React, { useState } from 'react';
-import Maps from '@/components/maps';
+import React, { useState, useEffect } from 'react';
+// import Maps from '@/components/maps';
+import Script from "next/script";
 
 export default function Home() {
     const [pickup, setPickup] = useState('Current Location');
@@ -47,27 +48,129 @@ export default function Home() {
         return colors[color] || 'bg-gray-100 text-gray-600';
     };
 
+    useEffect(() => {
+        window.initMap1 = function () {
+            navigator.geolocation.getCurrentPosition(position => {
+                const { latitude, longitude } = position.coords;
+                console.log("User location:", latitude, longitude);
+            })
+            
+            const map = new window.mappls.Map("map", {
+                center: [28.61, 77.23],
+                zoom: 11,
+            });
+
+            let pickupMarker = null;
+            let dropMarker = null;
+
+            let pickupELoc = null;
+            let dropELoc = null;
+
+            map.addListener("load", function () {
+                const placeOptions = {
+                    location: [latitude, longitude],
+                    region: "IND",
+                    searchChars: 2,
+                };
+
+                new window.mappls.search(
+                    document.getElementById("pickup"),
+                    placeOptions,
+                    function (data) {
+                        if (!data || !data[0]) return;
+
+                        const dt = data[0];
+                        pickupELoc = dt.eLoc;
+
+                        if (pickupMarker) pickupMarker.remove();
+
+                        window.mappls.pinMarker(
+                            {
+                                map: map,
+                                pin: pickupELoc,
+                                popupHtml: "Pickup Location",
+                            },
+                            function (marker) {
+                                pickupMarker = marker;
+                            }
+                        );
+
+                        calculateDistance();
+                    }
+                );
+
+                new window.mappls.search(
+                    document.getElementById("drop"),
+                    placeOptions,
+                    function (data) {
+                        if (!data || !data[0]) return;
+
+                        const dt = data[0];
+                        dropELoc = dt.eLoc;
+
+                        if (dropMarker) dropMarker.remove();
+
+                        window.mappls.pinMarker(
+                            {
+                                map: map,
+                                pin: dropELoc,
+                                popupHtml: "Drop Location",
+                            },
+                            function (marker) {
+                                dropMarker = marker;
+                            }
+                        );
+
+                        calculateDistance();
+                    }
+                );
+
+                async function calculateDistance() {
+                    if (!pickupELoc || !dropELoc) return;
+
+                    try {
+                        const response = await fetch(
+                            `https://apis.mappls.com/advancedmaps/v1/${process.env.NEXT_PUBLIC_MAPPLS_ACCESS_TOKEN}/distance_matrix/driving/${pickupELoc};${dropELoc}?region=IND`
+                        );
+
+                        const data = await response.json();
+
+                        const distance = data.results.distances[0][0];
+                        const duration = data.results.durations[0][0];
+
+                        const km = (distance / 1000).toFixed(2);
+                        const minutes = Math.round(duration / 60);
+
+                        console.log("Distance:", km + " km");
+                        console.log("ETA:", minutes + " mins");
+                    } catch (error) {
+                        console.error("Distance API error:", error);
+                    }
+                }
+            });
+        };
+    }, []);
     return (
         <>
+            <Script
+                src={`https://sdk.mappls.com/map/sdk/web?v=3.0&access_token=${process.env.NEXT_PUBLIC_MAPPLS_ACCESS_TOKEN}&callback=initMap1`}
+                strategy="afterInteractive"
+            />
+            <Script
+                src={`https://sdk.mappls.com/map/sdk/plugins?access_token=${process.env.NEXT_PUBLIC_MAPPLS_ACCESS_TOKEN}&v=3.0&libraries=search`}
+                strategy="afterInteractive"
+            />
+
+            <Script
+                src={`https://apis.mappls.com/advancedmaps/api/${process.env.NEXT_PUBLIC_MAPPLS_ACCESS_TOKEN}/map_sdk?layer=vector&v=3.0&plugins=place,direction`} />
 
             <div className="relative w-full h-screen flex flex-col bg-[#f6f7f8] text-slate-900 overflow-hidden">
                 {/* Main Map Area */}
                 <main className="absolute inset-0 z-0">
                     <div className="w-full h-full bg-cover bg-center">
-                        <Maps />
+                        <div id="map" style={{ width: "100%", height: "100vh" }} />
                         <div className="absolute inset-0 bg-blue-50/30 mix-blend-overlay" />
                         <div className="absolute inset-0 bg-white/10 backdrop-contrast-[0.9] backdrop-brightness-110" />
-                    </div>
-
-                    {/* Floating Car Markers */}
-                    <div className="absolute top-1/3 left-1/2 transform -translate-x-1/2 p-2 bg-white rounded-full shadow-lg z-0 animate-pulse">
-                        <span className="material-symbols-outlined text-[#2b9dee]">directions_car</span>
-                    </div>
-                    <div className="absolute top-2/3 left-2/3 p-2 bg-white rounded-full shadow-lg z-0">
-                        <span className="material-symbols-outlined text-slate-400">directions_car</span>
-                    </div>
-                    <div className="absolute bottom-1/4 left-1/4 p-2 bg-white rounded-full shadow-lg z-0">
-                        <span className="material-symbols-outlined text-slate-400">directions_car</span>
                     </div>
                 </main>
 
@@ -89,13 +192,14 @@ export default function Home() {
                             <div className="absolute left-5.75 top-7 bottom-7 w-0.5 border-l-2 border-dotted border-slate-300 z-0" />
 
                             {/* Pickup Input */}
-                            <div className="relative z-10 group">
+                            <div className="relative z-50 group">
                                 <label className="flex items-center bg-[#f6f7f8] group-focus-within:bg-white group-focus-within:ring-2 group-focus-within:ring-[#2b9dee]/20 transition-all rounded-full border border-transparent group-focus-within:border-[#2b9dee]/30">
                                     <div className="w-12 h-12 flex items-center justify-center text-[#2b9dee] shrink-0">
                                         <span className="material-symbols-outlined text-[20px]">my_location</span>
                                     </div>
                                     <input
-                                        className="w-full bg-transparent outline-none border-none text-slate-900 font-medium placeholder-slate-400 focus:ring-0 text-sm py-3.5 pr-4"
+                                        id='pickup'
+                                        className="z-50 w-full bg-transparent outline-none border-none text-slate-900 font-medium placeholder-slate-400 focus:ring-0 text-sm py-3.5 pr-4"
                                         placeholder="Pickup location"
                                         type="text"
                                         value={pickup}
@@ -111,6 +215,7 @@ export default function Home() {
                                         <span className="material-symbols-outlined text-[24px]">location_on</span>
                                     </div>
                                     <input
+                                        id='drop'
                                         className="w-full outline-none bg-transparent border-none text-slate-900 font-medium placeholder-slate-400 focus:ring-0 text-sm py-3.5 pr-4"
                                         placeholder="Where to?"
                                         type="text"
