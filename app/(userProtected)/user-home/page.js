@@ -1,7 +1,8 @@
 "use client"
 import React, { useState, useEffect } from 'react';
-// import Maps from '@/components/maps';
 import Script from "next/script";
+import { redirect } from 'next/navigation';
+import { forLatitudeLongitude } from '@/actions/useractions';
 
 export default function Home() {
     const [pickup, setPickup] = useState('Current Location');
@@ -54,7 +55,7 @@ export default function Home() {
                 const { latitude, longitude } = position.coords;
                 console.log("User location:", latitude, longitude);
             })
-            
+
             const map = new window.mappls.Map("map", {
                 center: [28.61, 77.23],
                 zoom: 11,
@@ -68,7 +69,7 @@ export default function Home() {
 
             map.addListener("load", function () {
                 const placeOptions = {
-                    location: [latitude, longitude],
+                    location: [38.61, 77.23],
                     region: "IND",
                     searchChars: 2,
                 };
@@ -81,6 +82,12 @@ export default function Home() {
 
                         const dt = data[0];
                         pickupELoc = dt.eLoc;
+                        const lat = dt.latitude || dt.placeLocation?.lat;
+                        const lng = dt.longitude || dt.placeLocation?.lng;
+                        
+                        console.log("Pickup eLoc:", pickupELoc);
+                        console.log("Pickup Latitude:", lat);
+                        console.log("Pickup Longitude:", lng);
 
                         if (pickupMarker) pickupMarker.remove();
 
@@ -127,16 +134,26 @@ export default function Home() {
 
                 async function calculateDistance() {
                     if (!pickupELoc || !dropELoc) return;
+                    console.log("Calculating distance between:", pickupELoc, dropELoc);
 
                     try {
                         const response = await fetch(
-                            `https://apis.mappls.com/advancedmaps/v1/${process.env.NEXT_PUBLIC_MAPPLS_ACCESS_TOKEN}/distance_matrix/driving/${pickupELoc};${dropELoc}?region=IND`
+                            `/api/mappls/distance?from=${encodeURIComponent(pickupELoc)}&to=${encodeURIComponent(dropELoc)}`
                         );
-
+                        console.log("Distance API response:", response);
+                        if (!response.ok) {
+                            throw new Error(`Distance API failed with status ${response.status}`);
+                        }
                         const data = await response.json();
 
-                        const distance = data.results.distances[0][0];
-                        const duration = data.results.durations[0][0];
+                        console.log("Distance API data:", data);
+
+                        const distance = data?.results?.distances;
+                        const duration = data?.results?.durations;
+
+                        if (distance === null || duration === null) {
+                            throw new Error("Distance API returned unexpected matrix format.");
+                        }
 
                         const km = (distance / 1000).toFixed(2);
                         const minutes = Math.round(duration / 60);
@@ -146,6 +163,7 @@ export default function Home() {
                     } catch (error) {
                         console.error("Distance API error:", error);
                     }
+                    redirect('/user-home/ride-selection');
                 }
             });
         };

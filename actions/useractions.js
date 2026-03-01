@@ -280,3 +280,8 @@ export async function forUploadImage(formData) {
         return { success: false, message: "Upload failed" };
     }
 }
+
+export async function forLatitudeLongitude(lat,lng) {
+
+
+}
