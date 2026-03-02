@@ -1,12 +1,18 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Script from "next/script";
 import { redirect } from 'next/navigation';
-import { forLatitudeLongitude } from '@/actions/useractions';
+import useUser from '@/hooks/useUser';
 
 export default function Home() {
-    const [pickup, setPickup] = useState('Current Location');
+    const [pickup, setPickup] = useState('');
     const [destination, setDestination] = useState('');
+    const { user } = useUser();
+    const userEmailRef = useRef(null);
+
+    useEffect(() => {
+        userEmailRef.current = user?.email ?? null;
+    }, [user]);
 
     const recentPlaces = [
         {
@@ -53,7 +59,6 @@ export default function Home() {
         window.initMap1 = function () {
             navigator.geolocation.getCurrentPosition(position => {
                 const { latitude, longitude } = position.coords;
-                console.log("User location:", latitude, longitude);
             })
 
             const map = new window.mappls.Map("map", {
@@ -69,7 +74,7 @@ export default function Home() {
 
             map.addListener("load", function () {
                 const placeOptions = {
-                    location: [38.61, 77.23],
+                    location: [28.61, 77.23],
                     region: "IND",
                     searchChars: 2,
                 };
@@ -84,10 +89,6 @@ export default function Home() {
                         pickupELoc = dt.eLoc;
                         const lat = dt.latitude || dt.placeLocation?.lat;
                         const lng = dt.longitude || dt.placeLocation?.lng;
-                        
-                        console.log("Pickup eLoc:", pickupELoc);
-                        console.log("Pickup Latitude:", lat);
-                        console.log("Pickup Longitude:", lng);
 
                         if (pickupMarker) pickupMarker.remove();
 
@@ -138,18 +139,16 @@ export default function Home() {
 
                     try {
                         const response = await fetch(
-                            `/api/mappls/distance?from=${encodeURIComponent(pickupELoc)}&to=${encodeURIComponent(dropELoc)}`
+                            `/api/mappls/distance?email=${userEmailRef.current}&from=${encodeURIComponent(pickupELoc)}&to=${encodeURIComponent(dropELoc)}`
                         );
-                        console.log("Distance API response:", response);
+                        
                         if (!response.ok) {
                             throw new Error(`Distance API failed with status ${response.status}`);
                         }
                         const data = await response.json();
 
-                        console.log("Distance API data:", data);
-
-                        const distance = data?.results?.distances;
-                        const duration = data?.results?.durations;
+                        const distance = data?.results?.distances[0][1];
+                        const duration = data?.results?.durations[0][1];
 
                         if (distance === null || duration === null) {
                             throw new Error("Distance API returned unexpected matrix format.");
@@ -163,11 +162,12 @@ export default function Home() {
                     } catch (error) {
                         console.error("Distance API error:", error);
                     }
-                    redirect('/user-home/ride-selection');
+                    // redirect('/user-home/ride-selection');
                 }
             });
         };
     }, []);
+    
     return (
         <>
             <Script
