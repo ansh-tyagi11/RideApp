@@ -1,6 +1,7 @@
 "use client"
 import React, { useState, useEffect, useRef } from 'react';
 import Script from "next/script";
+import { useRouter } from 'next/navigation';
 import { redirect } from 'next/navigation';
 import useUser from '@/hooks/useUser';
 
@@ -9,6 +10,8 @@ export default function Home() {
     const [destination, setDestination] = useState('');
     const { user } = useUser();
     const userEmailRef = useRef(null);
+    const [rideInfo, setRideInfo] = useState(null);
+    const router = useRouter()
 
     useEffect(() => {
         userEmailRef.current = user?.email ?? null;
@@ -134,6 +137,12 @@ export default function Home() {
                 );
 
                 async function calculateDistance() {
+                    let rideDataAvail = localStorage.getItem("rideData");
+                    if (rideDataAvail) {
+                        localStorage.removeItem("rideData");
+                        console.log("Data Removed")
+                    }
+
                     if (!pickupELoc || !dropELoc) return;
                     console.log("Calculating distance between:", pickupELoc, dropELoc);
 
@@ -141,7 +150,7 @@ export default function Home() {
                         const response = await fetch(
                             `/api/mappls/distance?email=${userEmailRef.current}&from=${encodeURIComponent(pickupELoc)}&to=${encodeURIComponent(dropELoc)}`
                         );
-                        
+
                         if (!response.ok) {
                             throw new Error(`Distance API failed with status ${response.status}`);
                         }
@@ -156,18 +165,30 @@ export default function Home() {
 
                         const km = (distance / 1000).toFixed(2);
                         const minutes = Math.round(duration / 60);
+                        setRideInfo({
+                            pickup: pickupELoc,
+                            drop: dropELoc,
+                            distance: km,
+                            duration: minutes
+                        });
 
+                        localStorage.setItem("rideData", JSON.stringify({
+                            pickup: pickupELoc,
+                            drop: dropELoc,
+                            distance: km,
+                            duration: minutes
+                        }));
                         console.log("Distance:", km + " km");
                         console.log("ETA:", minutes + " mins");
                     } catch (error) {
                         console.error("Distance API error:", error);
                     }
-                    // redirect('/user-home/ride-selection');
+                    router.push("/user-home/ride-selection");
                 }
             });
         };
     }, []);
-    
+
     return (
         <>
             <Script

@@ -1,9 +1,60 @@
 "use client";
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const RideSelection = () => {
     const [isActive, setIsActive] = useState("Sedan")
+    const [rideData, setRideData] = useState(null)
+    const router = useRouter()
+
+    useEffect(() => {
+        const storedRideData = localStorage.getItem("rideData");
+        console.log(storedRideData)
+        if (!storedRideData) {
+            router.push("/user-home");
+            return;
+        }
+        try {
+            const data = JSON.parse(storedRideData);
+            const { drop, pickup, duration, distance } = data;
+            console.log(drop)
+            setRideData({ drop, pickup, duration, distance });
+        } catch (error) {
+            console.error("Invalid rideData in localStorage:", error);
+            router.push("/user-home");
+        }
+    }, [])
+
+    useEffect(() => {
+        if (rideData?.pickup && rideData?.drop) {
+            calculateAmount(rideData)
+        }
+    }, [rideData])
+
+    const calculateAmount = async (rideData) => {
+        try {
+            const response = await fetch("/api/mappls/distance", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    pickup: rideData?.pickup,
+                    drop: rideData?.drop,
+                }),
+            });
+
+            const data = await response.json();
+            console.log("Distance API response:", data);
+            return data;
+        } catch (error) {
+            console.error("Error fetching distance:", error);
+        }
+    };
+
+
+
 
     return (
         <>
@@ -41,28 +92,42 @@ const RideSelection = () => {
                         <div className="flex-1 overflow-y-auto custom-scrollbar p-6 lg:p-8 flex flex-col gap-6">
                             {/* Location Timeline */}
                             <div className="bg-gray-50 dark:bg-[#192229] p-5 rounded-2xl border border-gray-100 dark:border-gray-700/50">
-                                <h2 className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-4">Your Route</h2>
+                                <span className='flex items-center justify-between'><h2 className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-4">Your Route</h2>
+                                    <h2 className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase tracking-wider mb-4">Total Distance {Math.floor(rideData?.distance)} Km</h2>
+                                </span>
                                 <div className="grid grid-cols-[24px_1fr] gap-x-4">
                                     <div className="flex flex-col items-center pt-1">
                                         <div className="size-3 bg-[#2b9dee] rounded-full ring-4 ring-[#2b9dee]/20"></div>
                                         <div className="w-0.5 bg-linear-to-b from-[#2b9dee]/50 to-gray-300 dark:to-gray-600 h-full min-h-10 my-1 rounded-full"></div>
                                     </div>
                                     <div className="pb-6">
-                                        <p className="text-xs text-gray-500 font-medium mb-0.5">Pick up · 10:42 AM</p>
+                                        <p className="text-xs text-gray-500 font-medium mb-0.5">Pick up • {new Date().toLocaleTimeString([], {
+                                            hour: "numeric",
+                                            minute: "2-digit",
+                                        }).toUpperCase()}</p>
                                         <p className="text-[#111518] dark:text-white text-base font-bold leading-tight">
-                                            Current Location
+                                            {rideData?.pickup}
                                         </p>
                                     </div>
                                     <div className="flex flex-col items-center">
                                         <span className="material-symbols-outlined text-gray-800 dark:text-white text-[24px]">location_on</span>
                                     </div>
                                     <div>
-                                        <p className="text-xs text-gray-500 font-medium mb-0.5">Drop off · 10:58 AM</p>
-                                        <p className="text-[#111518] dark:text-white text-base font-bold leading-tight">
-                                            1001 Market St, San Francisco
+                                        <p className="text-xs text-gray-500 font-medium mb-0.5">Drop off • {rideData?.duration
+                                            ? new Date(Date.now() + rideData.duration * 60000).toLocaleTimeString([], {
+                                                hour: "numeric",
+                                                minute: "2-digit",
+                                            }).toUpperCase()
+                                            : "Calculating..."
+                                        } • {rideData?.duration ? `${Math.floor(rideData.duration / 60)}h ${rideData.duration % 60}m` : ""}
                                         </p>
+                                        <p className="text-[#111518] dark:text-white text-base font-bold leading-tight">
+                                            {rideData?.drop}
+                                        </p>
+                                        {/* <div className='text-sm text-gray-500 font-medium mb-0.5'>Total Distance {Math.floor(rideData?.distance)} Km</div> */}
                                     </div>
                                 </div>
+
                             </div>
                             {/* Ride Selection Header */}
                             <div>
