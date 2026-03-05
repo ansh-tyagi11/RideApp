@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import connectDB from "@/db/connectDB";
-import User from "@/models/User";
-import { Sedan } from "next/font/google";
+import { calculateAllFares, calculateFare } from "@/utils/pricing";
 
 export async function GET(request) {
     await connectDB();
@@ -70,7 +69,7 @@ export async function GET(request) {
 }
 
 export async function POST(req) {
-    const { pickup, drop, email } = await req.json()
+    const { pickup, drop } = await req.json()
     console.log(pickup, drop)
 
     const mapplsKey =
@@ -91,12 +90,11 @@ export async function POST(req) {
     const duration = data?.results?.durations[0][1];
     const km = (distance / 1000).toFixed(2)
     const minutes = Math.round(duration / 60);
-    console.log(km)
-    let a = {
-        Micro: 50 + (km * 12) + (minutes * 2),
-        Sedan: 50 + (km * 12) + (minutes * 2),
-        Suv: 50 + (km * 12) + (minutes * 2)
 
-    }
-    return NextResponse.json({ a })
+    let a = calculateAllFares(km, minutes)
+    console.log(a)
+    let b = calculateFare("Sedan", km, minutes)
+    console.log(b)
+
+    return NextResponse.json({ success: true, fares: a })
 }

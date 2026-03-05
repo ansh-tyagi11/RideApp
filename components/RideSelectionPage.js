@@ -1,12 +1,14 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import useUser from '@/hooks/useUser';
 
 const RideSelection = () => {
-    const [isActive, setIsActive] = useState("Sedan")
-    const [rideData, setRideData] = useState(null)
-    const router = useRouter()
+    const [isActive, setIsActive] = useState("Sedan");
+    const [rideData, setRideData] = useState(null);
+    const router = useRouter();
+    const [pricing, setPricing] = useState(null);
+    const { user } = useUser()
 
     useEffect(() => {
         const storedRideData = localStorage.getItem("rideData");
@@ -44,17 +46,38 @@ const RideSelection = () => {
                     drop: rideData?.drop,
                 }),
             });
-
             const data = await response.json();
-            console.log("Distance API response:", data);
+            setPricing(data?.fares)
+            console.log("Distance API response:", data.fares);
+            console.log("Distance API response:", pricing);
             return data;
         } catch (error) {
             console.error("Error fetching distance:", error);
         }
     };
 
-
-
+    const testing = async () => {
+        try {
+            let response = await fetch("/api/mappls/rides", {
+                method: "POST",
+                headers: {
+                    "Content-type": "application/json"
+                },
+                body: JSON.stringify({
+                    userEmail: user.email,
+                    type: isActive,
+                    pickup: rideData?.pickup,
+                    drop: rideData?.drop
+                })
+            })
+            let data = await response.json();
+            if (data.success) {
+                router.push(`/user-home/captain-searching?rideId=${data.rideId}`);
+            }
+        } catch (error) {
+            console.error(error)
+        }
+    }
 
     return (
         <>
@@ -124,7 +147,6 @@ const RideSelection = () => {
                                         <p className="text-[#111518] dark:text-white text-base font-bold leading-tight">
                                             {rideData?.drop}
                                         </p>
-                                        {/* <div className='text-sm text-gray-500 font-medium mb-0.5'>Total Distance {Math.floor(rideData?.distance)} Km</div> */}
                                     </div>
                                 </div>
 
@@ -154,7 +176,7 @@ const RideSelection = () => {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[#111518] dark:text-white text-lg font-bold">₹12</p>
+                                            <p className="text-[#111518] dark:text-white text-lg font-bold">₹{pricing?.Micro ?? "Calculating..."}</p>
                                         </div>
                                     </div>
                                     {/* Option 2: Sedan (Selected) */}
@@ -176,7 +198,7 @@ const RideSelection = () => {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[#111518] dark:text-white text-lg font-bold">₹18.00</p>
+                                            <p className="text-[#111518] dark:text-white text-lg font-bold">₹{pricing?.Sedan ?? "Calculating..."}</p>
                                         </div>
                                     </div>
                                     {/* Option 3: SUV */}
@@ -195,7 +217,7 @@ const RideSelection = () => {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[#111518] dark:text-white text-lg font-bold">₹28.00</p>
+                                            <p className="text-[#111518] dark:text-white text-lg font-bold">₹{pricing?.SUV ?? "Calculating..."}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -204,10 +226,10 @@ const RideSelection = () => {
                         {/* Bottom Actions Area */}
                         <div className="p-6 lg:p-8 bg-white dark:bg-[#111518] border-t border-gray-100 dark:border-gray-800 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-20">
                             {/* CTA Button */}
-                            <button className="w-full bg-[#2b9dee] hover:bg-[#2b9dee]/90 text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-[#2b9dee]/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group">
+                            <button onClick={testing} className="group w-full bg-[#2b9dee] hover:bg-[#2b9dee]/90 text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-[#2b9dee]/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group">
                                 <Link href="/user-home/captain-searching" className="flex items-center gap-2">
-                                    <span>Confirm {isActive}</span>
-                                    <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                                <span>Confirm {isActive}</span>
+                                <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
                                 </Link>
                             </button>
                         </div>
