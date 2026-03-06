@@ -1,8 +1,46 @@
 'use client';
-import React from 'react';
-import Link from 'next/link';
+import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
 
 export default function CaptainSearchingPage() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const rideId = searchParams.get("rideId");
+  const [pickup, setPickup] = useState("")
+  const [drop, setDrop] = useState("")
+  const [amount, setAmount] = useState("")
+
+  useEffect(() => {
+    if (!rideId) {
+      toast.error("No such ride is found.")
+      return router.push("/user-home/ride-selection")
+    }
+    searchRide()
+  }, [])
+
+  const searchRide = async () => {
+    const response = await fetch(`/api/mappls/rides?rideId=${rideId}`)
+    let data = await response.json();
+    if (data.success == true) {
+      router.push(`/user-home/ride?rideId=${rideId}`)
+    } else {
+      return router.push("/user-home/ride-selection")
+    }
+    setPickup(data.pickupLocation)
+    setDrop(data.dropLocation)
+    setAmount(data.amount)
+  }
+
+  const cancelRide = async () => {
+    await fetch(`/api/mappls/rides?rideId=${rideId}`, {
+      method: "PUT"
+    })
+    toast.success("Ride cancelled successfully.")
+    router.push("/user-home/ride-selection")
+  }
+
   return (
     <div className="relative flex h-screen w-full flex-col overflow-x-auto">
       {/* Main Content Wrapper */}
@@ -86,7 +124,7 @@ export default function CaptainSearchingPage() {
                       Pick up
                     </p>
                     <p className="text-[#111518] dark:text-white font-semibold text-sm leading-tight">
-                      Current Location
+                      {pickup}
                     </p>
                   </div>
                   <div>
@@ -94,7 +132,7 @@ export default function CaptainSearchingPage() {
                       Drop off
                     </p>
                     <p className="text-[#111518] dark:text-white font-semibold text-sm leading-tight">
-                      1054 Market Street
+                      {drop}
                     </p>
                   </div>
                 </div>
@@ -116,21 +154,19 @@ export default function CaptainSearchingPage() {
                     <p className="text-xs text-slate-500 dark:text-slate-400">Personal</p>
                   </div>
                 </div>
-                <p className="text-base font-bold text-[#111518] dark:text-white">$12.50</p>
+                <p className="text-base font-bold text-[#111518] dark:text-white">₹ {amount}</p>
               </div>
             </div>
 
             {/* Actions */}
             <div className="mt-6 flex flex-col gap-3">
-              <button className="group flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3.5 transition-all hover:bg-slate-50 hover:border-slate-300 dark:bg-transparent dark:border-slate-600 dark:hover:bg-slate-800">
-                <Link href="/user-home/ride-selection" className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-slate-600 dark:text-slate-300 transition-colors group-hover:text-red-500">
-                    close
-                  </span>
-                  <span className="text-sm font-bold text-slate-700 dark:text-slate-200 transition-colors group-hover:text-red-600">
-                    Cancel Ride
-                  </span>
-                </Link>
+              <button onClick={cancelRide} className="group flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3.5 transition-all hover:bg-slate-50 hover:border-slate-300 dark:bg-transparent dark:border-slate-600 dark:hover:bg-slate-800">
+                <span className="material-symbols-outlined text-slate-600 dark:text-slate-300 transition-colors group-hover:text-red-500">
+                  close
+                </span>
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-200 transition-colors group-hover:text-red-600">
+                  Cancel Ride
+                </span>
               </button>
             </div>
           </div>

@@ -8,7 +8,8 @@ const RideSelection = () => {
     const [rideData, setRideData] = useState(null);
     const router = useRouter();
     const [pricing, setPricing] = useState(null);
-    const { user } = useUser()
+    const { user } = useUser();
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
         const storedRideData = localStorage.getItem("rideData");
@@ -56,7 +57,7 @@ const RideSelection = () => {
         }
     };
 
-    const testing = async () => {
+    const createRide = async () => {
         try {
             let response = await fetch("/api/mappls/rides", {
                 method: "POST",
@@ -73,6 +74,7 @@ const RideSelection = () => {
             let data = await response.json();
             if (data.success) {
                 router.push(`/user-home/captain-searching?rideId=${data.rideId}`);
+                setLoading(true);
             }
         } catch (error) {
             console.error(error)
@@ -226,11 +228,9 @@ const RideSelection = () => {
                         {/* Bottom Actions Area */}
                         <div className="p-6 lg:p-8 bg-white dark:bg-[#111518] border-t border-gray-100 dark:border-gray-800 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-20">
                             {/* CTA Button */}
-                            <button onClick={testing} className="group w-full bg-[#2b9dee] hover:bg-[#2b9dee]/90 text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-[#2b9dee]/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group">
-                                <Link href="/user-home/captain-searching" className="flex items-center gap-2">
-                                <span>Confirm {isActive}</span>
+                            <button onClick={createRide} disabled={loading} className={`group w-full bg-[#2b9dee] hover:bg-[#2b9dee]/90 text-white font-bold text-lg py-4 rounded-xl shadow-lg shadow-[#2b9dee]/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2 ${loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}`}>
+                                <span>{loading ? "Creating Ride..." : `Confirm ${isActive}`}</span>
                                 <span className="material-symbols-outlined group-hover:translate-x-1 transition-transform">arrow_forward</span>
-                                </Link>
                             </button>
                         </div>
                     </div>

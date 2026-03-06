@@ -3,7 +3,6 @@ import connectDB from "@/db/connectDB";
 import Rides from "@/models/Rides";
 import { NextResponse } from "next/server";
 import { calculateFare } from "@/utils/pricing";
-import { redirect } from "next/navigation";
 
 export async function POST(req) {
     await connectDB()
@@ -49,5 +48,33 @@ export async function POST(req) {
         amount: amount
     })
 
-    return NextResponse.json({ success: true, rideId: ride._id})
+    return NextResponse.json({ success: true, rideId: ride._id })
+}
+
+export async function GET(req) {
+    const { searchParams } = new URL(req.url);
+
+    const rideId = searchParams.get("rideId")
+    await connectDB();
+
+    const ride = await Rides.findOne({ _id: rideId })
+    console.log(ride.status)
+
+    if (ride.status == "cancelled" || ride.status != "searching") {
+        return NextResponse.json({ success: false })
+    }
+
+    const { pickupLocation, dropLocation, amount } = ride;
+
+    return NextResponse.json({ success: true, pickupLocation: pickupLocation, dropLocation: dropLocation, amount: amount });
+}
+
+export async function PUT(req) {
+    const { searchParams } = new URL(req.url);
+
+    const rideId = searchParams.get("rideId")
+    await connectDB();
+    await Rides.findOneAndUpdate({ _id: rideId, status: "searching" }, { status: "cancelled" })
+
+    return NextResponse.json({ success: true })
 }
