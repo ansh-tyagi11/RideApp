@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
+import useUser from '@/hooks/useUser';
 
 export default function CaptainSearchingPage() {
   const searchParams = useSearchParams();
@@ -11,27 +12,41 @@ export default function CaptainSearchingPage() {
   const [pickup, setPickup] = useState("")
   const [drop, setDrop] = useState("")
   const [amount, setAmount] = useState("")
+  const { user, loading } = useUser();
 
   useEffect(() => {
+    if (loading) return;
+    console.log(user.email)
+
     if (!rideId) {
       toast.error("No such ride is found.")
       return router.push("/user-home/ride-selection")
     }
     searchRide()
-  }, [])
+  }, [loading, user])
 
   const searchRide = async () => {
-    const response = await fetch(`/api/mappls/rides?rideId=${rideId}`)
-    let data = await response.json();
-    if (data.success == true) {
-      router.push(`/user-home/ride?rideId=${rideId}`)
-    } else {
-      return router.push("/user-home/ride-selection")
+    const response = await fetch(`/api/mappls/rides?rideId=${rideId}&userEmail=${user?.email}`);
+    const data = await response.json();
+
+    if (!data.success) {
+      toast.error(data.message || "Failed to fetch ride details.");
+      router.push("/user-home/ride-selection");
+      return;
     }
-    setPickup(data.pickupLocation)
-    setDrop(data.dropLocation)
-    setAmount(data.amount)
-  }
+
+    setPickup(data.pickupLocation);
+    setDrop(data.dropLocation);
+    setAmount(data.amount);
+
+    if (data.status === "accepted") {
+      router.push(`/user-home/ride?rideId=${rideId}`);
+    }
+
+    if (data.status === "cancelled") {
+      router.push("/user-home/ride-selection");
+    }
+  };
 
   const cancelRide = async () => {
     await fetch(`/api/mappls/rides?rideId=${rideId}`, {
@@ -39,6 +54,21 @@ export default function CaptainSearchingPage() {
     })
     toast.success("Ride cancelled successfully.")
     router.push("/user-home/ride-selection")
+  }
+
+  if (loading || !user) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="flex items-center gap-3 rounded-full bg-[#2b9dee]/10 px-4 py-2">
+          <span className="material-symbols-outlined text-[#2b9dee] animate-spin">
+            hourglass_top
+          </span>
+          <span className="text-sm font-medium text-[#2b9dee]">
+            Loading ride details...
+          </span>
+        </div>
+      </div>
+    );
   }
 
   return (

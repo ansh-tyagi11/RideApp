@@ -3,6 +3,7 @@ import connectDB from "@/db/connectDB";
 import Rides from "@/models/Rides";
 import { NextResponse } from "next/server";
 import { calculateFare } from "@/utils/pricing";
+import mongoose from "mongoose";
 
 export async function POST(req) {
     await connectDB()
@@ -55,13 +56,24 @@ export async function GET(req) {
     const { searchParams } = new URL(req.url);
 
     const rideId = searchParams.get("rideId")
+    const userEmail = searchParams.get("userEmail")
     await connectDB();
 
-    const ride = await Rides.findOne({ _id: rideId })
+    if (!mongoose.Types.ObjectId.isValid(rideId)) {
+        return NextResponse.json(
+            { success: false, message: "Invalid Ride ID" },
+            { status: 400 }
+        );
+    }
+    const user = await User.findOne({ email: userEmail })
+    if (!user) {
+        return NextResponse.json({ success: false, message: "User not found" }, { status: 400 })
+    }
+    const ride = await Rides.findById({ _id: rideId, userId: user._id });
     console.log(ride.status)
 
-    if (ride.status == "cancelled" || ride.status != "searching") {
-        return NextResponse.json({ success: false })
+    if (!ride) {
+        return NextResponse.json({ success: false, message: "Ride not found" })
     }
 
     const { pickupLocation, dropLocation, amount } = ride;
