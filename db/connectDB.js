@@ -8,7 +8,9 @@ const connectDB = async () => {
         const conn = await mongoose.connect(process.env.MONGO_URI)
         return conn;
     } catch (error) {
-        process.exit(1);
+        console.error("Failed to connect to MongoDB. Check MONGO_URI in .env.local.");
+        console.error(error);
+        throw error;
     }
 }
 

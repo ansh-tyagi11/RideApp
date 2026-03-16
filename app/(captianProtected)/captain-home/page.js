@@ -1,6 +1,29 @@
-import React from 'react'
+"use client";
+import React from 'react';
+import { io } from 'socket.io-client';
+import useCaptain from '@/hooks/useCaptain';
 
 const page = () => {
+    const { user } = useCaptain();
+
+    const acceptRide = () => {
+        if (!user) {
+        console.log("Captain not loaded yet");
+        return;
+    }
+        console.log(user?.email)
+        let socket = io.connect("http://localhost:4000/rideStatus");
+        let rideId = "";
+        socket.emit("roomId", rideId);
+
+        socket.emit("redirect", { captain: user?.email, rideId: rideId })
+
+        socket.on("redirect", (payload) => {
+            console.log(payload)
+        })
+        console.log(user?.email)
+    }
+
     return (
         <>
             <div className="bg-[#f6f7f8] dark:bg-[#101922] pt-20 text-[#0d141b] transition-colors duration-200">
@@ -156,7 +179,7 @@ const page = () => {
                                         </div>
                                         {/* Action Buttons */}
                                         <div className="flex gap-4 mt-8">
-                                            <button className="flex-1 bg-[#22c55e] hover:bg-[#22c55e]/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-[#22c55e]/20 transition-all flex items-center justify-center gap-2">
+                                            <button onClick={acceptRide} className="flex-1 bg-[#22c55e] hover:bg-[#22c55e]/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-[#22c55e]/20 transition-all flex items-center justify-center gap-2">
                                                 <span className="material-symbols-outlined">check_circle</span>
                                                 Accept Request
                                             </button>
