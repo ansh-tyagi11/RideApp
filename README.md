@@ -1,4 +1,4 @@
-# Uber Clone (RideApp)
+# RideApp
 
 A full-stack ride-booking web application inspired by Uber, built with Next.js App Router, MongoDB, and NextAuth.
 
