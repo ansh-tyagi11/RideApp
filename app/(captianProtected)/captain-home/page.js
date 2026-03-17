@@ -1,28 +1,38 @@
 "use client";
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 import useCaptain from '@/hooks/useCaptain';
 
 const page = () => {
     const { user } = useCaptain();
+    const [rideStatusSocket, setRideStatusSocket] = useState("")
+
+    useEffect(() => {
+        const rideStatusSocket = io.connect("http://localhost:4000/rideStatus");
+        setRideStatusSocket(rideStatusSocket)
+        return () => rideStatusSocket.disconnect();
+    }, [])
 
     const acceptRide = () => {
-        if (!user) {
-        console.log("Captain not loaded yet");
-        return;
-    }
-        console.log(user?.email)
-        let socket = io.connect("http://localhost:4000/rideStatus");
-        let rideId = "";
-        socket.emit("roomId", rideId);
+        if (!user) return;
 
-        socket.emit("redirect", { captain: user?.email, rideId: rideId })
+        console.log(user?.email);
 
-        socket.on("redirect", (payload) => {
-            console.log(payload)
-        })
-        console.log(user?.email)
-    }
+        const currentRideId = "";
+
+        rideStatusSocket.emit("roomId", currentRideId);
+
+        rideStatusSocket.emit("redirect", {
+            captainEmail: user?.email,
+            rideId: currentRideId
+        });
+
+        rideStatusSocket.on("redirect", (redirectPayload) => {
+            console.log(redirectPayload);
+        });
+
+        console.log(user?.email);
+    };
 
     return (
         <>

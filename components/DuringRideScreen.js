@@ -1,8 +1,15 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 export default function DuringRide() {
   const [isActive, setIsActive] = useState(false)
+  const search = useSearchParams();
+
+  useEffect(() => {
+    const rideId = search.get("rideId");
+    if (!rideId) return;
+  })
 
   const handleChange = () => {
     setIsActive(!isActive)

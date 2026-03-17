@@ -72,33 +72,38 @@ chat.on("connection", (socket) => {
 
 rideStatus.on("connection", (socket) => {
 
-    socket.on("roomId", (activeRoom) => {
-        socket.join(activeRoom);
+    socket.on("roomId", (activeRoomId) => {
+        socket.join(activeRoomId);
 
-        console.log(socket.id, "joined room", activeRoom);
+        console.log(socket.id, "joined room", activeRoomId);
 
-        const clients = rideStatus.adapter.rooms.get(activeRoom);
-        const numClients = clients ? clients.size : 0;
+        const roomClients = rideStatus.adapter.rooms.get(activeRoomId);
+        const totalClientsInRoom = roomClients ? roomClients.size : 0;
 
-        console.log("Users in room:", numClients);
+        console.log("Users in room:", totalClientsInRoom);
     });
 
-    socket.on("redirect", async (rideInfo) => {
-        const { captain, rideId } = rideInfo
-        let user = await User.findOne({ email: captain })
-        console.log(user)
-        const captainId = user._id
-        const ride = await Rides.findByIdAndUpdate(
-            rideId,
+    socket.on("redirect", async (rideAcceptanceInfo) => {
+        const { captain: captainEmail, rideId: acceptedRideId } = rideAcceptanceInfo;
+
+        const captainUser = await User.findOne({ email: captainEmail });
+        console.log(captainUser);
+
+        const captainObjectId = captainUser._id;
+
+        const updatedRide = await Rides.findByIdAndUpdate(
+            acceptedRideId,
             {
                 $set: {
                     status: "Accepted",
-                    captainId: captainId
+                    captainId: captainObjectId
                 }
             },
             { new: true }
-        )
-        console.log(ride)
-        rideStatus.to(rideInfo.rideId).emit("redirect", `/ride?rideId=${rideInfo.rideId}`)
-    })
-})
+        );
+
+        console.log(updatedRide);
+
+        rideStatus.to(acceptedRideId).emit("redirect", `/ride?rideId=${acceptedRideId}`);
+    });
+});
