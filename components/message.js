@@ -1,5 +1,6 @@
 "use client"
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { io } from "socket.io-client";
 
 const quickReplies = ["I see you!", "Where are you?", "Be there in a sec"];
 
@@ -25,10 +26,11 @@ const initialMessages = [
 ];
 
 
-export default function Message() {
+export default function Message({ role, rideId }) {
     const [messages, setMessages] = useState(initialMessages);
     const [input, setInput] = useState("");
     const messagesEndRef = useRef(null);
+    const [Socket, setSocket] = useState(null)
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -37,6 +39,25 @@ export default function Message() {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    useEffect(() => {
+        const roomId = rideId;
+        const socket = io.connect("http://localhost:4000/chat");
+        setSocket(socket)
+        socket.on("connect", () => {
+            console.log("Connected to Socket.IO server");
+        });
+
+        socket.emit('roomId', roomId);
+
+        socket.on("chat", (payload) => {
+            setMessages((prev) => [...prev, { id: Date.now(), sender: "captain", text: payload.message, time: getCurrentTime() }])
+        })
+
+        return () => {
+            socket.disconnect();
+        };
+    }, [rideId])
 
     const getCurrentTime = () => {
         return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -47,10 +68,12 @@ export default function Message() {
         if (!trimmed) return;
         const newMsg = {
             id: Date.now(),
-            sender: "user",
+            sender: role,
             text: trimmed,
             time: getCurrentTime(),
         };
+
+        Socket.emit("chat", { message: newMsg.text, roomId: rideId })
         setMessages((prev) => [...prev, newMsg]);
         setInput("");
     };
@@ -62,7 +85,7 @@ export default function Message() {
     return (
         <div
             style={{ fontFamily: "'Plus Jakarta Sans', sans-serif", backgroundColor: "#fbf8ff" }}
-            className="max-w-md mx-auto flex w-75 h-75 right-20 top-30 flex-col relative overflow-hidden bg-[#fbf8ff]">
+            className="max-w-md mx-auto flex h-125 flex-col relative overflow-hidden bg-[#fbf8ff]">
             {/* Top App Bar */}
             <nav
                 style={{
@@ -96,7 +119,7 @@ export default function Message() {
 
             {/* Main Chat Area */}
             <main
-                className="flex-1 overflow-y-auto px-6 w-70 pt-4 pb-36 space-y-6"
+                className="flex-1 overflow-y-auto px-6 pt-4 pb-36 space-y-6"
                 style={{ scrollbarWidth: "none", msOverflowStyle: "none" }} >
                 {/* Trip Context Card */}
                 <section className="relative">

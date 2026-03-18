@@ -1,15 +1,30 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import Message from '../../../../components/message';
+import { forVerifyRideId } from '@/actions/useractions';
 
 export default function DuringRide() {
   const [isActive, setIsActive] = useState(false)
   const search = useSearchParams();
+  const [rideId, setRideId] = useState(null);
+  const router = useRouter();
 
   useEffect(() => {
-    const rideId = search.get("rideId");
-    if (!rideId) return;
-  })
+    let rideId = search.get("rideId");
+    if (!rideId) {
+      setStep(0);
+    } else {
+      setRideId(rideId);
+      console.log("Current Ride ID:", rideId);
+    }
+    verify(rideId);
+  }, [])
+
+  const verify = async (rideId) => {
+    let response = await forVerifyRideId(rideId);
+    if (!response.success) return router.push("/ride-selection");
+  }
 
   const handleChange = () => {
     setIsActive(!isActive)

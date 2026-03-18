@@ -11,6 +11,7 @@ import { sendEmailContact } from "@/lib/mailerContact";
 import cloudinary from "@/lib/cloudinary";
 import Session from "@/models/Session";
 import { cookies } from "next/headers";
+import { findRide } from "@/services/userServices";
 
 export const createUser = async (data) => {
 
@@ -281,7 +282,16 @@ export async function forUploadImage(formData) {
     }
 }
 
-export async function forLatitudeLongitude(lat,lng) {
 
+export async function forVerifyRideId(id) {
+
+    await connectDB();
+    let ride = await findRide(id)
+
+    if (ride.success) {
+        return { success: true }
+    }
+
+    return { success: true }
 
 }

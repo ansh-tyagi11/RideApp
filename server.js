@@ -52,7 +52,7 @@ chat.on("connection", (socket) => {
 
         console.log(socket.id, "joined room", activeRoom);
 
-        const clients = io.sockets.adapter.rooms.get(activeRoom);
+        const clients = chat.adapter.rooms.get(activeRoom);
         const numClients = clients ? clients.size : 0;
 
         console.log("Users in room:", numClients);

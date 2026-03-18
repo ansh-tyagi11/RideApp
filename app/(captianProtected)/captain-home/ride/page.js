@@ -1,7 +1,8 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import Message from '../../../../components/message';
+import { forVerifyRideId } from '@/actions/useractions';
 
 const STEPS = ['heading_to_pickup', 'arrived', 'ride_started', 'completed'];
 
@@ -17,6 +18,8 @@ export default function CaptainDuringRide() {
     const [step, setStep] = useState(0);
     const search = useSearchParams();
     const [open, setOpen] = useState(false);
+    const [rideId, setRideId] = useState(null);
+    const router = useRouter();
 
     const currentStep = STEPS[step];
     const isCompleted = currentStep === 'completed';
@@ -46,14 +49,23 @@ export default function CaptainDuringRide() {
         completed: { label: 'Trip complete', eta: 'Arrived', color: 'text-green-600 dark:text-green-400' },
     }[currentStep];
 
+
     useEffect(() => {
         let rideId = search.get("rideId");
         if (!rideId) {
             setStep(0);
         } else {
+            setRideId(rideId);
             console.log("Current Ride ID:", rideId);
         }
-    })
+        verify(rideId);
+    }, [])
+
+    const verify = async (rideId) => {
+        let response = await forVerifyRideId(rideId)
+        if (!response.success) return router.push("/captain-home")
+    }
+
     return (
         <div className="bg-[#f6f7f8] dark:bg-[#101a22] text-[#111518] font-display h-screen w-screen md:overflow-hidden flex relative flex-col md:flex-row overflow-x-hidden">
 
@@ -212,9 +224,12 @@ export default function CaptainDuringRide() {
                                 </div>
                             </div>
                             <div className="ml-auto flex gap-2">
-                                <button onClick={() => setOpen(!open)} className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f0f3f4] dark:bg-[#1A2632] text-[#111518] dark:text-white hover:bg-[#2b9dee]/20 hover:text-[#2b9dee] transition-all">
-                                    <span className="material-symbols-outlined text-[20px]">
-                                        {open && <Message />} chat </span>
+                                {/* Chat Button */}
+                                <button
+                                    onClick={() => setOpen(!open)}
+                                    className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f0f3f4] dark:bg-[#1A2632] text-[#111518] dark:text-white hover:bg-[#2b9dee]/20 hover:text-[#2b9dee] transition-all"
+                                >
+                                    <span className="material-symbols-outlined text-[20px]">chat</span>
                                 </button>
                                 <button className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f0f3f4] dark:bg-[#1A2632] text-[#111518] dark:text-white hover:bg-[#2b9dee]/20 hover:text-[#2b9dee] transition-all">
                                     <span className="material-symbols-outlined text-[20px]">call</span>
@@ -357,12 +372,40 @@ export default function CaptainDuringRide() {
                 </div>
             </aside>
 
+            {/* ── Chat Popup Overlay ── */}
+            {open && (
+                <>
+                    {/* Backdrop */}
+                    <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+                        onClick={() => setOpen(false)} />
+
+                    {/* Popup Container */}
+                    <div className="fixed z-50 bottom-6 right-6 md:bottom-10 md:right-8 w-[calc(100vw-3rem)] max-w-sm shadow-2xl rounded-2xl overflow-hidden animate-popup-in">
+                        {/* Close button sits above the Message component */}
+                        <div className="relative">
+                            <button onClick={() => setOpen(false)}
+                                className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-[#191b25] transition-colors" >
+                                <span className="material-symbols-outlined text-[18px]">close</span>
+                            </button>
+                            <Message role="captain" rideId={rideId} />
+                        </div>
+                    </div>
+                </>
+            )}
+
             <style jsx>{`
         @keyframes fade-in-down {
           from { opacity: 0; transform: translateY(-20px); }
           to { opacity: 1; transform: translateY(0); }
         }
         .animate-fade-in-down { animation: fade-in-down 0.3s ease-out; }
+
+        @keyframes popup-in {
+          from { opacity: 0; transform: translateY(20px) scale(0.95); }
+          to   { opacity: 1; transform: translateY(0)   scale(1);    }
+        }
+        .animate-popup-in { animation: popup-in 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
         .pulse-ring {
           animation: pulse-blue 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
