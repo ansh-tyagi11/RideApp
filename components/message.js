@@ -36,25 +36,51 @@ export default function Message({ role, rideId }) {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
+    const currentUser = role;
+
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
 
     useEffect(() => {
         const roomId = rideId;
-        const socket = io.connect("http://localhost:4000/chat");
+        const socket = io("http://localhost:4000/chat", {
+            autoConnect: true,
+            reconnection: true,
+            reconnectionAttempts: Infinity,
+            reconnectionDelay: 500,
+            reconnectionDelayMax: 5000,
+            timeout: 20000,
+        });
         setSocket(socket)
         socket.on("connect", () => {
             console.log("Connected to Socket.IO server");
+        });
+        socket.on("reconnect", (attempt) => {
+            console.log("Reconnected after", attempt, "attempt(s)");
+        });
+        socket.on("reconnect_attempt", (attempt) => {
+            console.log("Reconnection attempt", attempt);
+        });
+        socket.on("reconnect_error", (err) => {
+            console.log("Reconnect error", err?.message || err);
         });
 
         socket.emit('roomId', roomId);
 
         socket.on("chat", (payload) => {
-            setMessages((prev) => [...prev, { id: Date.now(), sender: "captain", text: payload.message, time: getCurrentTime() }])
+            setMessages((prev) => [...prev, { id: Date.now(), sender: payload.sender, text: payload.message, time: payload.time }])
         })
 
+        const handleOnline = () => {
+            if (!socket.connected) {
+                socket.connect();
+            }
+        };
+        window.addEventListener("online", handleOnline);
+
         return () => {
+            window.removeEventListener("online", handleOnline);
             socket.disconnect();
         };
     }, [rideId])
@@ -73,8 +99,7 @@ export default function Message({ role, rideId }) {
             time: getCurrentTime(),
         };
 
-        Socket.emit("chat", { message: newMsg.text, roomId: rideId })
-        setMessages((prev) => [...prev, newMsg]);
+        Socket.emit("chat", { message: newMsg.text, sender: newMsg.sender, time: newMsg.time, roomId: rideId })
         setInput("");
     };
 
@@ -158,33 +183,37 @@ export default function Message({ role, rideId }) {
 
                 {/* Messages */}
                 {messages.map((msg) =>
-                    msg.sender === "captain" ? (
-                        <div key={msg.id} className="flex items-end gap-3 max-w-[85%]">
-                            <div className="flex-1 space-y-2">
-                                <div className="bg-[#ededfb] text-[#191b25] p-4 rounded-t-xl rounded-br-xl rounded-bl-none text-sm leading-relaxed">
-                                    {msg.text}
-                                </div>
-                                <span className="text-[10px] text-[#737688] px-1">
-                                    Captain David • {msg.time}
-                                </span>
-                            </div>
-                        </div>
-                    ) : (
+                    msg.sender === currentUser ? (
                         <div key={msg.id} className="flex items-end gap-3 max-w-[85%] ml-auto">
                             <div className="flex-1 space-y-2 flex flex-col items-end">
                                 <div
                                     style={{ background: "linear-gradient(135deg, #003ec7 0%, #0052ff 100%)" }}
-                                    className="text-white p-4 rounded-t-xl rounded-bl-xl rounded-br-none text-sm shadow-md leading-relaxed">
+                                    className="text-white p-4 rounded-t-xl rounded-bl-xl rounded-br-none text-sm shadow-md leading-relaxed"
+                                >
                                     {msg.text}
                                 </div>
                                 <div className="flex items-center gap-1 px-1">
                                     <span className="text-[10px] text-[#737688]">{msg.time}</span>
                                     <span
                                         className="material-symbols-outlined text-[#003ec7] text-xs"
-                                        style={{ fontVariationSettings: "'FILL' 1", fontSize: "14px" }} >
+                                        style={{ fontVariationSettings: "'FILL' 1", fontSize: "14px" }}
+                                    >
                                         done_all
                                     </span>
                                 </div>
+                            </div>
+                        </div>
+                    ) : (
+                        // LEFT SIDE (other person)
+                        <div key={msg.id} className="flex items-end gap-3 max-w-[85%]">
+                            <div className="flex-1 space-y-2">
+                                <div className="bg-[#ededfb] text-[#191b25] p-4 rounded-t-xl rounded-br-xl rounded-bl-none text-sm leading-relaxed">
+                                    {msg.text}
+                                </div>
+
+                                <span className="text-[10px] text-[#737688] px-1">
+                                    Captain David • {msg.time}
+                                </span>
                             </div>
                         </div>
                     )

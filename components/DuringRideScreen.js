@@ -1,13 +1,14 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import Message from '../../../../components/message';
+import Message from '@/components/message';
 import { forVerifyRideId } from '@/actions/useractions';
 
 export default function DuringRide() {
   const [isActive, setIsActive] = useState(false)
-  const search = useSearchParams();
   const [rideId, setRideId] = useState(null);
+  const [open, setOpen] = useState(false);
+  const search = useSearchParams();
   const router = useRouter();
 
   useEffect(() => {
@@ -178,7 +179,7 @@ export default function DuringRide() {
                 </div>
               </div>
               <div className="ml-auto flex gap-2">
-                <button className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f0f3f4] dark:bg-[#1A2632] text-[#111518] dark:text-white hover:bg-[#2b9dee]/20 hover:text-[#2b9dee] transition-all">
+                <button onClick={() => setOpen(!open)} className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f0f3f4] dark:bg-[#1A2632] text-[#111518] dark:text-white hover:bg-[#2b9dee]/20 hover:text-[#2b9dee] transition-all">
                   <span className="material-symbols-outlined text-[20px]">chat</span>
                 </button>
                 <button className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f0f3f4] dark:bg-[#1A2632] text-[#111518] dark:text-white hover:bg-[#2b9dee]/20 hover:text-[#2b9dee] transition-all">
@@ -266,6 +267,17 @@ export default function DuringRide() {
             </div>
           </div>
 
+          <div className="mt-6 flex flex-col gap-3">
+            <button className="group flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3.5 transition-all hover:bg-slate-50 hover:border-slate-300 dark:bg-transparent dark:border-slate-600 dark:hover:bg-slate-800">
+              <span className="material-symbols-outlined text-slate-600 dark:text-slate-300 transition-colors group-hover:text-red-500">
+                close
+              </span>
+              <span className="text-sm font-bold text-slate-700 dark:text-slate-200 transition-colors group-hover:text-red-600">
+                Cancel Ride
+              </span>
+            </button>
+          </div>
+
           {/* Action Cluster */}
           <div className="mt-auto">
             <p className="text-sm font-medium text-[#617989] mb-3 px-1">
@@ -298,6 +310,26 @@ export default function DuringRide() {
           </div>
         </div>
       </aside>
+
+      {open && (
+        <>
+          {/* Backdrop */}
+          <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
+            onClick={() => setOpen(false)} />
+
+          {/* Popup Container */}
+          <div className="fixed z-50 bottom-6 right-6 md:bottom-10 md:right-8 w-[calc(100vw-3rem)] max-w-sm shadow-2xl rounded-2xl overflow-hidden animate-popup-in">
+            {/* Close button sits above the Message component */}
+            <div className="relative">
+              <button onClick={() => setOpen(false)}
+                className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-[#191b25] transition-colors" >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+              <Message role="user" rideId={rideId} />
+            </div>
+          </div>
+        </>
+      )}
 
       <style jsx>{`
         @keyframes fade-in-down {
