@@ -1,23 +1,20 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Message from '@/components/message';
 import { forVerifyRideId } from '@/actions/useractions';
+import CancelRideButton from './CancelRideButton';
+import { useRideId } from '@/hooks/rideId';
 
 export default function DuringRide() {
-  const [isActive, setIsActive] = useState(false)
-  const [rideId, setRideId] = useState(null);
+  const [isActive, setIsActive] = useState(false);
   const [open, setOpen] = useState(false);
-  const search = useSearchParams();
   const router = useRouter();
+  const rideId = useRideId();
 
   useEffect(() => {
-    let rideId = search.get("rideId");
     if (!rideId) {
       setStep(0);
-    } else {
-      setRideId(rideId);
-      console.log("Current Ride ID:", rideId);
     }
     verify(rideId);
   }, [])
@@ -267,16 +264,7 @@ export default function DuringRide() {
             </div>
           </div>
 
-          <div className="mt-6 flex flex-col gap-3">
-            <button className="group flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-6 py-3.5 transition-all hover:bg-slate-50 hover:border-slate-300 dark:bg-transparent dark:border-slate-600 dark:hover:bg-slate-800">
-              <span className="material-symbols-outlined text-slate-600 dark:text-slate-300 transition-colors group-hover:text-red-500">
-                close
-              </span>
-              <span className="text-sm font-bold text-slate-700 dark:text-slate-200 transition-colors group-hover:text-red-600">
-                Cancel Ride
-              </span>
-            </button>
-          </div>
+          <CancelRideButton rideId={rideId} />
 
           {/* Action Cluster */}
           <div className="mt-auto">

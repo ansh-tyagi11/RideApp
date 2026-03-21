@@ -1,14 +1,14 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
 import useUser from '@/hooks/useUser';
+import CancelRideButton from './CancelRideButton';
+import { useRideId } from '@/hooks/rideId';
 
 export default function CaptainSearchingPage() {
-  const searchParams = useSearchParams();
   const router = useRouter();
-  const rideId = searchParams.get("rideId");
+  const rideId = useRideId();
   const [pickup, setPickup] = useState("")
   const [drop, setDrop] = useState("")
   const [amount, setAmount] = useState("")
@@ -48,13 +48,13 @@ export default function CaptainSearchingPage() {
     }
   };
 
-  const cancelRide = async () => {
-    await fetch(`/api/mappls/rides?rideId=${rideId}`, {
-      method: "PUT"
-    })
-    toast.success("Ride cancelled successfully.")
-    router.push("/user-home/ride-selection")
-  }
+  // const cancelRide = async () => {
+  //   await fetch(`/api/mappls/rides?rideId=${rideId}`, {
+  //     method: "PUT"
+  //   })
+  //   toast.success("Ride cancelled successfully.")
+  //   router.push("/user-home/ride-selection")
+  // }
 
   if (loading || !user) {
     return (
@@ -189,7 +189,7 @@ export default function CaptainSearchingPage() {
             </div>
 
             {/* Actions */}
-            <div className="mt-6 flex flex-col gap-3">
+            {/* <div className="mt-6 flex flex-col gap-3">
               <button onClick={cancelRide} className="group flex w-full items-center justify-center gap-2 rounded-full border border-slate-200 bg-white px-6 py-3.5 transition-all hover:bg-slate-50 hover:border-slate-300 dark:bg-transparent dark:border-slate-600 dark:hover:bg-slate-800">
                 <span className="material-symbols-outlined text-slate-600 dark:text-slate-300 transition-colors group-hover:text-red-500">
                   close
@@ -198,7 +198,8 @@ export default function CaptainSearchingPage() {
                   Cancel Ride
                 </span>
               </button>
-            </div>
+            </div> */}
+            <CancelRideButton rideId={rideId} />
           </div>
         </div>
       </main>

@@ -1,8 +1,9 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Message from '../../../../components/message';
 import { forVerifyRideId } from '@/actions/useractions';
+import { useRideId } from '@/hooks/rideId';
 
 const STEPS = ['heading_to_pickup', 'arrived', 'ride_started', 'completed'];
 
@@ -16,10 +17,9 @@ const stepLabels = {
 export default function CaptainDuringRide() {
     const [isActive, setIsActive] = useState(false);
     const [step, setStep] = useState(0);
-    const search = useSearchParams();
     const [open, setOpen] = useState(false);
-    const [rideId, setRideId] = useState(null);
     const router = useRouter();
+    const rideId  = useRideId()
 
     const currentStep = STEPS[step];
     const isCompleted = currentStep === 'completed';
@@ -51,14 +51,16 @@ export default function CaptainDuringRide() {
 
 
     useEffect(() => {
-        let rideId = search.get("rideId");
+
         if (!rideId) {
             setStep(0);
-        } else {
-            setRideId(rideId);
-            console.log("Current Ride ID:", rideId);
         }
+
+        let st = setTimeout(() => {
+            console.log(rideId)
+        }, 3000)
         verify(rideId);
+        return () => clearTimeout(st)
     }, [])
 
     const verify = async (rideId) => {
