@@ -47,21 +47,21 @@ const rideStatus = io.of("/rideStatus");
 chat.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
-    socket.on("roomId", (activeRoom) => {
-        socket.join(activeRoom);
+    socket.on("roomId", (roomId) => {
+        socket.join(roomId);
 
-        console.log(socket.id, "joined room", activeRoom);
+        console.log(socket.id, "joined room", roomId);
 
-        const clients = chat.adapter.rooms.get(activeRoom);
-        const numClients = clients ? clients.size : 0;
+        const roomClients = chat.adapter.rooms.get(roomId);
+        const clientCount = roomClients ? roomClients.size : 0;
 
-        console.log("Users in room:", numClients);
+        console.log("Users in room:", clientCount);
     });
 
-    socket.on("chat", (payload) => {
-        console.log(payload);
+    socket.on("chat", (msg) => {
+        console.log(msg);
 
-        chat.to(payload.roomId).emit("chat", payload);
+        chat.to(msg.roomId).emit("chat", msg);
     });
 
     socket.on("disconnect", () => {
@@ -72,38 +72,58 @@ chat.on("connection", (socket) => {
 
 rideStatus.on("connection", (socket) => {
 
-    socket.on("roomId", (activeRoomId) => {
-        socket.join(activeRoomId);
+    socket.on("roomId", (roomId) => {
+        socket.join(roomId);
 
-        console.log(socket.id, "joined room", activeRoomId);
+        console.log(socket.id, "joined room", roomId);
 
-        const roomClients = rideStatus.adapter.rooms.get(activeRoomId);
-        const totalClientsInRoom = roomClients ? roomClients.size : 0;
+        const roomClients = rideStatus.adapter.rooms.get(roomId);
+        const clientCount = roomClients ? roomClients.size : 0;
 
-        console.log("Users in room:", totalClientsInRoom);
+        console.log("Users in room:", clientCount);
     });
 
-    socket.on("redirect", async (rideAcceptanceInfo) => {
-        const { captain: captainEmail, rideId: acceptedRideId } = rideAcceptanceInfo;
+    socket.on("redirect", async (acceptInfo) => {
+        const { captainEmail, rideId } = acceptInfo;
 
-        const captainUser = await User.findOne({ email: captainEmail });
-        console.log(captainUser);
+        const captain = await User.findOne({ email: captainEmail });
+        // console.log(captain);
 
-        const captainObjectId = captainUser._id;
+        const captainId = captain._id;
 
-        const updatedRide = await Rides.findByIdAndUpdate(
-            acceptedRideId,
+        const updatedRide = await Rides.findOneAndUpdate(
+            { _id: rideId, status: "searching" },
             {
                 $set: {
                     status: "Accepted",
-                    captainId: captainObjectId
+                    captainId: captainId
                 }
             },
             { new: true }
         );
 
-        console.log(updatedRide);
+        if (!updatedRide) {
+            rideStatus.to(rideId).emit("rideRejected", "Ride already accepted");
+            return;
+        }
 
-        rideStatus.to(acceptedRideId).emit("redirect", `/ride?rideId=${acceptedRideId}`);
+        socket.emit("redirect", `captain-home/ride?rideId=${rideId}`);
     });
+
+    socket.on("rideStatus", async (statusInfo) => {
+        const { rideId, rideStatus: status } = statusInfo;
+        console.log(rideId, status)
+        const updatedRide = await Rides.findOneAndUpdate(
+            { _id: rideId },
+            {
+                $set: {
+                    status: status,
+                }
+            },
+            { new: true }
+        );
+
+        rideStatus.to(rideId).emit("status", status);
+
+    })
 });

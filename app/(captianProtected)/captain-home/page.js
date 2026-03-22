@@ -1,37 +1,48 @@
 "use client";
-import React, { useEffect, useState } from 'react';
-import { io } from 'socket.io-client';
+import React, { useEffect } from 'react';
 import useCaptain from '@/hooks/useCaptain';
+import { useRouter } from 'next/navigation';
+import { toast } from 'react-toastify';
+import socket from '@/lib/socket';
 
-const page = () => {
-    const { user } = useCaptain();
-    const [rideStatusSocket, setRideStatusSocket] = useState("")
+const CaptainHomePage = () => {
+    const { user: captain } = useCaptain();
+    const router = useRouter();
 
     useEffect(() => {
-        const rideStatusSocket = io.connect("http://localhost:4000/rideStatus");
-        setRideStatusSocket(rideStatusSocket)
-        return () => rideStatusSocket.disconnect();
-    }, [])
+        const activeRideId = sessionStorage.getItem("activeRideId");
+
+        if (activeRideId) {
+            router.replace(`/captain-home/ride?rideId=${activeRideId}`);
+        }
+
+        socket.on("rideRejected", (msg) => {
+            toast.error(msg);
+        });
+
+        socket.on("redirect", (url) => {
+            sessionStorage.setItem("activeRideId", "");
+            router.push(url);
+        });
+
+        return () => {
+            socket.off("rideRejected");
+            socket.off("redirect");
+        };
+
+    }, []);
 
     const acceptRide = () => {
-        if (!user) return;
+        if (!captain) return;
 
-        console.log(user?.email);
+        const rideId = "";
 
-        const currentRideId = "";
+        socket.emit("roomId", rideId);
 
-        rideStatusSocket.emit("roomId", currentRideId);
-
-        rideStatusSocket.emit("redirect", {
-            captainEmail: user?.email,
-            rideId: currentRideId
+        socket.emit("redirect", {
+            captainEmail: captain.email,
+            rideId: rideId
         });
-
-        rideStatusSocket.on("redirect", (redirectPayload) => {
-            console.log(redirectPayload);
-        });
-
-        console.log(user?.email);
     };
 
     return (
@@ -221,4 +232,4 @@ const page = () => {
     )
 }
 
-export default page
+export default CaptainHomePage

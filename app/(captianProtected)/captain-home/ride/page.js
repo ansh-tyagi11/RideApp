@@ -4,68 +4,88 @@ import { useRouter } from 'next/navigation';
 import Message from '../../../../components/message';
 import { forVerifyRideId } from '@/actions/useractions';
 import { useRideId } from '@/hooks/rideId';
+import socket from '@/lib/socket';
 
-const STEPS = ['heading_to_pickup', 'arrived', 'ride_started', 'completed'];
+const rideSteps = ['accepted', 'arriving', 'ongoing', 'completed'];
 
-const stepLabels = {
-    heading_to_pickup: 'Heading to Pickup',
-    arrived: 'Arrived at Pickup',
-    ride_started: 'Ride in Progress',
+const stepText = {
+    accepted: 'Heading to Pickup',
+    arriving: 'Arrived at Pickup',
+    ongoing: 'Ride in Progress',
     completed: 'Trip Completed',
 };
 
 export default function CaptainDuringRide() {
-    const [isActive, setIsActive] = useState(false);
-    const [step, setStep] = useState(0);
-    const [open, setOpen] = useState(false);
+    const [panelOpen, setPanelOpen] = useState(false);
+    const [stepIdx, setStepIdx] = useState(0);
+    const [chatOpen, setChatOpen] = useState(false);
     const router = useRouter();
-    const rideId  = useRideId()
+    const rideId = useRideId();
 
-    const currentStep = STEPS[step];
-    const isCompleted = currentStep === 'completed';
+    const stepKey = rideSteps[stepIdx];
+    const tripDone = stepKey === 'completed';
 
-    const handlePrimaryAction = () => {
-        if (step < STEPS.length - 1) setStep((s) => s + 1);
+    const advanceStep = () => {
+
+        if (stepIdx >= rideSteps.length - 1) return;
+
+        const nextStep = rideSteps[stepIdx + 1];
+
+        setStepIdx((s) => s + 1);
+
+        socket.emit("rideStatus", {
+            rideId,
+            rideStatus: nextStep
+        });
     };
 
-    const primaryLabel = {
-        heading_to_pickup: 'Arrived at Pickup',
-        arrived: 'Start Ride',
-        ride_started: 'Complete Trip',
+    const primaryText = {
+        accepted: 'Arrived at Pickup',
+        arriving: 'Start Ride',
+        ongoing: 'Complete Trip',
         completed: 'Trip Completed ✓',
-    }[currentStep];
+    }[stepKey];
 
-    const primaryIcon = {
-        heading_to_pickup: 'where_to_vote',
-        arrived: 'play_arrow',
-        ride_started: 'flag',
+    const primarySymbol = {
+        accepted: 'where_to_vote',
+        arriving: 'play_arrow',
+        ongoing: 'flag',
         completed: 'check_circle',
-    }[currentStep];
+    }[stepKey];
 
-    const etaBanner = {
-        heading_to_pickup: { label: 'Heading to rider', eta: 'ETA 8 mins', color: 'text-blue-500 dark:text-blue-400' },
-        arrived: { label: 'Waiting for rider', eta: 'Arrived', color: 'text-yellow-500 dark:text-yellow-400' },
-        ride_started: { label: 'Ride in progress', eta: 'ETA 14 mins', color: 'text-green-600 dark:text-green-400' },
+    const etaInfo = {
+        accepted: { label: 'Heading to rider', eta: 'ETA 8 mins', color: 'text-blue-500 dark:text-blue-400' },
+        arriving: { label: 'Waiting for rider', eta: 'Arrived', color: 'text-yellow-500 dark:text-yellow-400' },
+        ongoing: { label: 'Ride in progress', eta: 'ETA 14 mins', color: 'text-green-600 dark:text-green-400' },
         completed: { label: 'Trip complete', eta: 'Arrived', color: 'text-green-600 dark:text-green-400' },
-    }[currentStep];
-
+    }[stepKey];
 
     useEffect(() => {
 
         if (!rideId) {
-            setStep(0);
+            setStepIdx(0);
         }
 
-        let st = setTimeout(() => {
+        let logTimer = setTimeout(() => {
             console.log(rideId)
         }, 3000)
-        verify(rideId);
-        return () => clearTimeout(st)
+        verifyRide(rideId);
+        return () => clearTimeout(logTimer)
     }, [])
 
-    const verify = async (rideId) => {
-        let response = await forVerifyRideId(rideId)
-        if (!response.success) return router.push("/captain-home")
+    useEffect(() => {
+        socket.emit("rideId", rideId);
+
+        socket.on("status", (status) => {
+            console.log(status)
+        });
+
+        return () => socket.off("status");
+    }, [rideId])
+
+    const verifyRide = async (rideId) => {
+        let verifyRes = await forVerifyRideId(rideId)
+        if (!verifyRes.success) return router.push("/captain-home")
     }
 
     return (
@@ -117,11 +137,11 @@ export default function CaptainDuringRide() {
                         </div>
                         <div className="flex flex-col">
                             <h3 className="text-base font-bold text-[#111518] dark:text-white leading-tight">
-                                {etaBanner.label}
+                                {etaInfo.label}
                             </h3>
-                            <p className={`text-sm font-medium ${etaBanner.color}`}>
-                                {etaBanner.eta}{' '}
-                                {currentStep === 'heading_to_pickup' && (
+                            <p className={`text-sm font-medium ${etaInfo.color}`}>
+                                {etaInfo.eta}{' '}
+                                {stepKey === 'accepted' && (
                                     <span className="text-[#617989] font-normal">• 2.4 miles</span>
                                 )}
                             </p>
@@ -155,12 +175,12 @@ export default function CaptainDuringRide() {
 
             {/* Right Panel: Rider Info & Captain Controls */}
             <aside
-                className={`w-full md:w-105 rounded-t-4xl md:rounded-t-none bg-white dark:bg-[#1A2632] absolute bottom-0 z-20 md:h-full flex flex-col shadow-xl md:relative shrink-0 overflow-y-auto ${isActive ? 'h-[75%]' : 'h-[28%]'
+                className={`w-full md:w-105 rounded-t-4xl md:rounded-t-none bg-white dark:bg-[#1A2632] absolute bottom-0 z-20 md:h-full flex flex-col shadow-xl md:relative shrink-0 overflow-y-auto ${panelOpen ? 'h-[75%]' : 'h-[28%]'
                     }`}
             >
                 {/* Drag Handle */}
                 <div
-                    onClick={() => setIsActive(!isActive)}
+                    onClick={() => setPanelOpen(!panelOpen)}
                     className="p-6 pb-2 z-30 sticky top-0 bg-white dark:bg-[#1A2632] cursor-pointer"
                 >
                     <div className="flex items-center justify-center mb-4">
@@ -170,12 +190,12 @@ export default function CaptainDuringRide() {
                     {/* Step Status Badge */}
                     <div className="flex items-center justify-between mb-1">
                         <span
-                            className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${isCompleted
+                            className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full ${tripDone
                                 ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                                 : 'bg-blue-100 text-[#2b9dee] dark:bg-blue-900/20'
                                 }`}
                         >
-                            {stepLabels[currentStep]}
+                            {stepText[stepKey]}
                         </span>
                         <span className="text-xs text-[#617989] dark:text-gray-400 font-medium">
                             Trip #48291
@@ -228,7 +248,7 @@ export default function CaptainDuringRide() {
                             <div className="ml-auto flex gap-2">
                                 {/* Chat Button */}
                                 <button
-                                    onClick={() => setOpen(!open)}
+                                    onClick={() => setChatOpen(!chatOpen)}
                                     className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f0f3f4] dark:bg-[#1A2632] text-[#111518] dark:text-white hover:bg-[#2b9dee]/20 hover:text-[#2b9dee] transition-all"
                                 >
                                     <span className="material-symbols-outlined text-[20px]">chat</span>
@@ -274,7 +294,7 @@ export default function CaptainDuringRide() {
                         <div className="flex gap-4 mb-8">
                             <div className="flex flex-col items-center">
                                 <div
-                                    className={`w-4 h-4 rounded-full border-[3px] shrink-0 ${step >= 1
+                                    className={`w-4 h-4 rounded-full border-[3px] shrink-0 ${stepIdx >= 1
                                         ? 'bg-[#2b9dee] border-[#2b9dee]'
                                         : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-[#1A2632]'
                                         }`}
@@ -298,13 +318,13 @@ export default function CaptainDuringRide() {
                             </div>
                             <div className="flex flex-col -mt-1.5 p-3 rounded-lg bg-[#2b9dee]/5 border border-[#2b9dee]/10 w-full">
                                 <p className="text-xs text-[#2b9dee] font-bold uppercase tracking-wider mb-0.5">
-                                    {stepLabels[currentStep]}
+                                    {stepText[stepKey]}
                                 </p>
                                 <p className="text-[#111518] dark:text-white text-sm font-medium">
-                                    {currentStep === 'heading_to_pickup' && '~8 mins to pickup'}
-                                    {currentStep === 'arrived' && 'Waiting for rider to board'}
-                                    {currentStep === 'ride_started' && '~14 mins to destination'}
-                                    {currentStep === 'completed' && 'Dropped off successfully'}
+                                    {stepKey === 'accepted' && '~8 mins to pickup'}
+                                    {stepKey === 'arriving' && 'Waiting for rider to board'}
+                                    {stepKey === 'ongoing' && '~14 mins to destination'}
+                                    {stepKey === 'completed' && 'Dropped off successfully'}
                                 </p>
                             </div>
                         </div>
@@ -313,7 +333,7 @@ export default function CaptainDuringRide() {
                         <div className="flex gap-4">
                             <div className="flex flex-col items-center">
                                 <div
-                                    className={`w-4 h-4 rounded-full border-[3px] shrink-0 ${isCompleted
+                                    className={`w-4 h-4 rounded-full border-[3px] shrink-0 ${tripDone
                                         ? 'bg-green-500 border-green-500'
                                         : 'border-[#2b9dee] bg-white dark:bg-[#1A2632]'
                                         }`}
@@ -335,15 +355,15 @@ export default function CaptainDuringRide() {
                     <div className="mt-auto flex flex-col gap-3">
                         {/* Primary Action */}
                         <button
-                            onClick={handlePrimaryAction}
-                            disabled={isCompleted}
-                            className={`flex items-center justify-center gap-2 w-full py-4 rounded-xl font-bold transition-all shadow-lg text-white ${isCompleted
+                            onClick={advanceStep}
+                            disabled={tripDone}
+                            className={`flex items-center justify-center gap-2 w-full py-4 rounded-xl font-bold transition-all shadow-lg text-white ${tripDone
                                 ? 'bg-green-500 shadow-green-200 dark:shadow-none cursor-default'
                                 : 'bg-[#2b9dee] hover:bg-blue-600 shadow-blue-200 dark:shadow-none active:scale-[0.98]'
                                 }`}
                         >
-                            <span className="material-symbols-outlined text-[20px]">{primaryIcon}</span>
-                            <span>{primaryLabel}</span>
+                            <span className="material-symbols-outlined text-[20px]">{primarySymbol}</span>
+                            <span>{primaryText}</span>
                         </button>
 
                         {/* Secondary Actions */}
@@ -361,7 +381,7 @@ export default function CaptainDuringRide() {
                                 <span className="text-xs font-semibold text-[#111518] dark:text-white">Safety</span>
                             </button>
                             <button
-                                disabled={isCompleted}
+                                disabled={tripDone}
                                 className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors group disabled:opacity-40"
                             >
                                 <span className="material-symbols-outlined text-red-500 group-hover:scale-110 transition-transform">
@@ -375,17 +395,17 @@ export default function CaptainDuringRide() {
             </aside>
 
             {/* ── Chat Popup Overlay ── */}
-            {open && (
+            {chatOpen && (
                 <>
                     {/* Backdrop */}
                     <div className="fixed inset-0 z-40 bg-black/30 backdrop-blur-sm"
-                        onClick={() => setOpen(false)} />
+                        onClick={() => setChatOpen(false)} />
 
                     {/* Popup Container */}
                     <div className="fixed z-50 bottom-6 right-6 md:bottom-10 md:right-8 w-[calc(100vw-3rem)] max-w-sm shadow-2xl rounded-2xl overflow-hidden animate-popup-in">
                         {/* Close button sits above the Message component */}
                         <div className="relative">
-                            <button onClick={() => setOpen(false)}
+                            <button onClick={() => setChatOpen(false)}
                                 className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-[#191b25] transition-colors" >
                                 <span className="material-symbols-outlined text-[18px]">close</span>
                             </button>
