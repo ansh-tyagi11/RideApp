@@ -112,7 +112,7 @@ rideStatus.on("connection", (socket) => {
 
     socket.on("rideStatus", async (statusInfo) => {
         const { rideId, rideStatus: status } = statusInfo;
-        console.log(rideId, status)
+        
         const updatedRide = await Rides.findOneAndUpdate(
             { _id: rideId },
             {

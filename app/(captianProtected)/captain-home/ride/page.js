@@ -25,13 +25,54 @@ export default function CaptainDuringRide() {
     const stepKey = rideSteps[stepIdx];
     const tripDone = stepKey === 'completed';
 
+    useEffect(() => {
+
+        if (!rideId) {
+            setStepIdx(0);
+        }
+
+        verifyRide(rideId);
+
+        return () => clearTimeout(logTimer)
+    }, [])
+
+    const verifyRide = async (rideId) => {
+        let verifyRes = await forVerifyRideId(rideId);
+        if (!verifyRes.success) return router.push("/captain-home");
+
+        let status = verifyRes.ride?.status;
+        const idx = rideSteps.indexOf(status);
+
+        if (idx !== -1) {
+            setStepIdx(idx);
+        }
+    }
+
+    useEffect(() => {
+        if (!rideId) return;
+
+        socket.emit("roomId", rideId);
+
+        const handleStatus = (status) => {
+            const idx = rideSteps.indexOf(status);
+
+            if (idx !== -1) {
+                setStepIdx(idx);
+            }
+        };
+
+        socket.on("status", handleStatus);
+
+        return () => {
+            socket.off("status", handleStatus);
+        };
+    }, [rideId]);
+
     const advanceStep = () => {
 
         if (stepIdx >= rideSteps.length - 1) return;
 
         const nextStep = rideSteps[stepIdx + 1];
-
-        setStepIdx((s) => s + 1);
 
         socket.emit("rideStatus", {
             rideId,
@@ -59,34 +100,6 @@ export default function CaptainDuringRide() {
         ongoing: { label: 'Ride in progress', eta: 'ETA 14 mins', color: 'text-green-600 dark:text-green-400' },
         completed: { label: 'Trip complete', eta: 'Arrived', color: 'text-green-600 dark:text-green-400' },
     }[stepKey];
-
-    useEffect(() => {
-
-        if (!rideId) {
-            setStepIdx(0);
-        }
-
-        let logTimer = setTimeout(() => {
-            console.log(rideId)
-        }, 3000)
-        verifyRide(rideId);
-        return () => clearTimeout(logTimer)
-    }, [])
-
-    useEffect(() => {
-        socket.emit("rideId", rideId);
-
-        socket.on("status", (status) => {
-            console.log(status)
-        });
-
-        return () => socket.off("status");
-    }, [rideId])
-
-    const verifyRide = async (rideId) => {
-        let verifyRes = await forVerifyRideId(rideId)
-        if (!verifyRes.success) return router.push("/captain-home")
-    }
 
     return (
         <div className="bg-[#f6f7f8] dark:bg-[#101a22] text-[#111518] font-display h-screen w-screen md:overflow-hidden flex relative flex-col md:flex-row overflow-x-hidden">

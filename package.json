@@ -9,6 +9,7 @@
     "start": "next start"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.95.0",
     "argon2": "^0.44.0",
     "browser-image-compression": "^2.0.2",
     "cloudinary": "^2.9.0",

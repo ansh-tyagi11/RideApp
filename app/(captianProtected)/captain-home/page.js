@@ -21,7 +21,7 @@ const CaptainHomePage = () => {
         });
 
         socket.on("redirect", (url) => {
-            sessionStorage.setItem("activeRideId", "");
+            sessionStorage.setItem("activeRideId", "69bfac4b9d1929a9d513c2b2");
             router.push(url);
         });
 
@@ -35,7 +35,7 @@ const CaptainHomePage = () => {
     const acceptRide = () => {
         if (!captain) return;
 
-        const rideId = "";
+        const rideId = "69bfac4b9d1929a9d513c2b2";
 
         socket.emit("roomId", rideId);
 

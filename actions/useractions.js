@@ -11,7 +11,9 @@ import { sendEmailContact } from "@/lib/mailerContact";
 import cloudinary from "@/lib/cloudinary";
 import Session from "@/models/Session";
 import { cookies } from "next/headers";
-import { findRide } from "@/services/userServices";
+import { findCaptainId, findRide } from "@/services/userServices";
+import Rides from "@/models/Rides";
+import mongoose from "mongoose";
 
 export const createUser = async (data) => {
 
@@ -286,12 +288,39 @@ export async function forUploadImage(formData) {
 export async function forVerifyRideId(id) {
 
     await connectDB();
-    let ride = await findRide(id)
-
+    let ride = await findRide(id);
     if (ride.success) {
-        return { success: true }
+        return { success: true, ...ride }
     }
 
-    return { success: true }
-
+    return { success: false }
 }
+
+export async function forAllRides(email) {
+    await connectDB();
+
+    let captain = await findCaptainId(email);
+
+    const { _id } = captain;
+
+    let rides = await Rides.find({ captainId: _id }).lean();
+
+    console.log(rides);
+
+    return { success: true, rides: JSON.parse(JSON.stringify(rides)) }
+}
+
+
+// amount: 7066
+// captainId: "69bfadf89d1929a9d513c2c1"
+// createdAt:"2026-03-22T08:46:03.628Z"
+// distance: 348.88
+// dropLocation: "T45T84"
+// duration: 351
+// paymentStatus: "pending"
+// pickupLocation: "Y0IPGQ"
+// status: "completed"
+// updatedAt: "2026-03-23T08:36:16.792Z"
+// userId: "69bfaa696e913a423173cc8c"
+// __v: 0
+// _id: "69bfac4b9d1929a9d513c2b2"
