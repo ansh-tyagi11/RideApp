@@ -296,31 +296,20 @@ export async function forVerifyRideId(id) {
     return { success: false }
 }
 
-export async function forAllRides(email) {
+export async function forAllRides(email, status = "all") {
     await connectDB();
 
     let captain = await findCaptainId(email);
 
     const { _id } = captain;
 
-    let rides = await Rides.find({ captainId: _id }).lean();
+    let query = { captainId: _id }
 
-    console.log(rides);
+    if (status != "all") {
+        query.status = status
+    }
+
+    let rides = await Rides.find(query).lean();
 
     return { success: true, rides: JSON.parse(JSON.stringify(rides)) }
 }
-
-
-// amount: 7066
-// captainId: "69bfadf89d1929a9d513c2c1"
-// createdAt:"2026-03-22T08:46:03.628Z"
-// distance: 348.88
-// dropLocation: "T45T84"
-// duration: 351
-// paymentStatus: "pending"
-// pickupLocation: "Y0IPGQ"
-// status: "completed"
-// updatedAt: "2026-03-23T08:36:16.792Z"
-// userId: "69bfaa696e913a423173cc8c"
-// __v: 0
-// _id: "69bfac4b9d1929a9d513c2b2"

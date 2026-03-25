@@ -33,7 +33,7 @@ export default function CaptainDuringRide() {
 
         verifyRide(rideId);
 
-        return () => clearTimeout(logTimer)
+        return;
     }, [])
 
     const verifyRide = async (rideId) => {
