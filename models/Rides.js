@@ -10,6 +10,8 @@ const RidesSchema = new mongoose.Schema(
         distance: { type: Number, },
         duration: { type: Number, },
         amount: { type: Number, required: true, },
+        pickupTime: { type: Number },
+        dropTime: { type: Number },
         status: {
             type: String, enum: [
                 "searching",

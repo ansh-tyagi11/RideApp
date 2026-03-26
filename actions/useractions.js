@@ -296,7 +296,7 @@ export async function forVerifyRideId(id) {
     return { success: false }
 }
 
-export async function forAllRides(email, status = "all") {
+export async function forAllRides(email, status = "all", page = 1, limit = 10) {
     await connectDB();
 
     let captain = await findCaptainId(email);
@@ -309,7 +309,15 @@ export async function forAllRides(email, status = "all") {
         query.status = status
     }
 
-    let rides = await Rides.find(query).lean();
+    if (status === "active") {
+        query.status = { $in: ["ongoing", "arriving", "accepted"] };
+    }
 
-    return { success: true, rides: JSON.parse(JSON.stringify(rides)) }
+    let skip = (page - 1) * limit;
+
+    let rides = await Rides.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean();
+
+    const total = await Rides.countDocuments(query);
+
+    return { success: true, rides: JSON.parse(JSON.stringify(rides)), nextPage: skip + limit < total ? page + 1 : null }
 }
