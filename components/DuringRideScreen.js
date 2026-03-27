@@ -22,6 +22,11 @@ export default function DuringRide() {
   const verify = async (rideId) => {
     let response = await forVerifyRideId(rideId);
     if (!response.success) return router.push("/ride-selection");
+    const activeRideId = sessionStorage.getItem("activeRideId");
+
+    if (!activeRideId) {
+      sessionStorage.setItem("activeRideId", rideId);
+    }
   }
 
   const handleChange = () => {

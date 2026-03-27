@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useRef, useState } from 'react';
 import useCaptain from '@/hooks/useCaptain';
-import { forAllRides } from '@/actions/useractions';
+import { forAllCaptainRides } from '@/actions/useractions';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
@@ -11,7 +11,7 @@ const Page = () => {
     const [filter, setFilter] = useState("all");
     const [highlighted, setHighlighted] = useState(null);
     const [debouncedInput, setDebouncedInput] = useState("");
-    const { user: captain} = useCaptain();
+    const { user: captain } = useCaptain();
     const router = useRouter();
     const loadMoreRef = useRef(null);
 
@@ -23,7 +23,7 @@ const Page = () => {
     }, [input]);
 
     const fetchRides = async ({ pageParam = 1 }) => {
-        const res = await forAllRides(captain.email, filter, pageParam);
+        const res = await forAllCaptainRides(captain.email, filter, pageParam);
         return res;
     };
 
@@ -35,10 +35,11 @@ const Page = () => {
         isError,
         isLoading,
     } = useInfiniteQuery({
-        queryKey: ["captain-rides", filter],
+        queryKey: ["captain-rides", captain?.email, filter],
         queryFn: fetchRides,
         initialPageParam: 1,
         getNextPageParam: (lastPage) => lastPage?.nextPage ?? undefined,
+        enabled: !!captain?.email
     });
 
     const rides = data?.pages?.flatMap((page) => page.rides) ?? [];
@@ -254,7 +255,7 @@ const Page = () => {
                                                                 <div className="flex items-center gap-4">
                                                                     <div className="flex items-center gap-1.5 text-slate-500 text-xs font-medium">
                                                                         <span className="material-symbols-outlined text-sm">schedule</span>
-                                                                        {ride.duration ? `${Math.floor(ride.duration / 60)}h ${Math.floor(ride.duration % 60)}m` : ""}
+                                                                        {ride.duration ? `${Math.floor(ride.duration / 60)}h ${Math.floor(ride.duration % 60)}m` : "--:--"}
                                                                     </div>
                                                                     <div className="flex items-center gap-1.5 text-slate-500 text-xs font-medium">
                                                                         <span className="material-symbols-outlined text-sm">distance</span>
@@ -346,14 +347,14 @@ const Page = () => {
                                                                 <div className="mb-8 relative">
                                                                     <div className="absolute -left-8 top-1 size-4 rounded-full bg-[#137fec] ring-4 ring-[#137fec]/10"></div>
                                                                     <p className="text-xs font-bold text-[#137fec] uppercase mb-1">
-                                                                        Pickup • {new Date(ride.pickupTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                                                        Pickup • {ride.pickupTime ? `${new Date(ride.pickupTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "--:--"}
                                                                     </p>
                                                                     <p className="text-sm font-medium text-[#0d141b] dark:text-slate-200">{ride.pickupLocation}</p>
                                                                 </div>
                                                                 <div className="relative">
                                                                     <div className="absolute -left-8 top-1 size-4 rounded-full bg-slate-800 dark:bg-slate-200 ring-4 ring-slate-200 dark:ring-slate-700"></div>
                                                                     <p className="text-xs font-bold text-[#4c739a] dark:text-slate-500 uppercase mb-1">
-                                                                        Dropoff • {new Date(ride.dropTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                                                        Dropoff • {ride.dropTime ? `${new Date(ride.dropTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "--:--"}
                                                                     </p>
                                                                     <p className="text-sm font-medium text-[#0d141b] dark:text-slate-200">{ride.dropLocation}</p>
                                                                 </div>

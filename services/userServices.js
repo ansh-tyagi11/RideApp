@@ -18,7 +18,7 @@ export async function findRide(id) {
     return { success: true, ride: JSON.parse(JSON.stringify(ride)) };
 }
 
-export async function findCaptainId(email) {
+export async function findUserId(email) {
     await connectDB();
 
     return await User.findOne({ email: email }).lean();

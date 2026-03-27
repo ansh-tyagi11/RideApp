@@ -59,6 +59,12 @@ export default function Home() {
     };
 
     useEffect(() => {
+        const activeRideId = sessionStorage.getItem("activeRideId");
+
+        if (activeRideId) {
+            router.replace(`/user-home/ride?rideId=${activeRideId}`);
+        }
+
         window.initMap1 = function () {
             navigator.geolocation.getCurrentPosition(position => {
                 const { latitude, longitude } = position.coords;

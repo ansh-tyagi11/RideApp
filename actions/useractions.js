@@ -11,7 +11,7 @@ import { sendEmailContact } from "@/lib/mailerContact";
 import cloudinary from "@/lib/cloudinary";
 import Session from "@/models/Session";
 import { cookies } from "next/headers";
-import { findCaptainId, findRide } from "@/services/userServices";
+import { findUserId, findRide } from "@/services/userServices";
 import Rides from "@/models/Rides";
 import mongoose from "mongoose";
 
@@ -296,10 +296,11 @@ export async function forVerifyRideId(id) {
     return { success: false }
 }
 
-export async function forAllRides(email, status = "all", page = 1, limit = 10) {
+export async function forAllCaptainRides(email, status = "all", page = 1, limit = 10) {
+    if (!email) return { success: false, rides: [], nextPage: null };
     await connectDB();
 
-    let captain = await findCaptainId(email);
+    let captain = await findUserId(email);
 
     const { _id } = captain;
 
@@ -316,6 +317,34 @@ export async function forAllRides(email, status = "all", page = 1, limit = 10) {
     let skip = (page - 1) * limit;
 
     let rides = await Rides.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean();
+
+    const total = await Rides.countDocuments(query);
+
+    return { success: true, rides: JSON.parse(JSON.stringify(rides)), nextPage: skip + limit < total ? page + 1 : null }
+}
+
+export async function forAllRiderRides(email, status = "all", page = 1, limit = 10) {
+    if (!email) return { success: false, rides: [], nextPage: null };
+
+    await connectDB();
+
+    let rider = await findUserId(email);
+
+    const { _id } = rider;
+
+    let query = { userId: _id };
+
+    if (status != "all") {
+        query.status = status
+    }
+
+    if (status == "active") {
+        query.status = { $in: ["accepted", "arriving", "ongoing"] }
+    }
+
+    let skip = (page - 1) * limit;
+
+    let rides = await Rides.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit);
 
     const total = await Rides.countDocuments(query);
 
