@@ -13,7 +13,7 @@ import Session from "@/models/Session";
 import { cookies } from "next/headers";
 import { findUserId, findRide } from "@/services/userServices";
 import Rides from "@/models/Rides";
-import mongoose from "mongoose";
+import Payment from "@/models/Payment";
 
 export const createUser = async (data) => {
 
@@ -349,4 +349,99 @@ export async function forAllRiderRides(email, status = "all", page = 1, limit = 
     const total = await Rides.countDocuments(query);
 
     return { success: true, rides: JSON.parse(JSON.stringify(rides)), nextPage: skip + limit < total ? page + 1 : null }
+}
+
+export async function forAllRiderPayments(email, status = "all payments", page = 1, limit = 10) {
+    if (!email) return { success: false, payments: [], nextPage: null };
+    await connectDB();
+
+    const rider = await findUserId(email);
+    if (!rider) return { success: false, payments: [], nextPage: null };
+    const { _id } = rider;
+
+    const matchStage = { userId: _id };
+
+    const normalizedStatus = String(status ?? "all payments").toLowerCase();
+    if (normalizedStatus !== "all payments" && normalizedStatus !== "all") {
+        matchStage.status = normalizedStatus === "cancelled" ? "canceled" : normalizedStatus;
+    }
+
+    const skip = (page - 1) * limit;
+
+    const payments = await Payment.aggregate([
+        { $match: matchStage },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+            $lookup: {
+                from: "rides",
+                let: { rideId: "$rideId" },
+                pipeline: [{
+                    $match: {
+                        $expr: { $eq: ["$_id", "$$rideId"] }
+                    }
+                },
+                {
+                    $project: {
+                        pickupLocation: 1,
+                        dropLocation: 1,
+                        distance: 1,
+                        duration: 1
+                    }
+                }
+                ],
+                as: "ride"
+            }
+        }, {
+            $unwind: {
+                path: "$ride",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                let: { userId: "$userId" },
+                pipeline: [{
+                    $match: {
+                        $expr: { $eq: ["$_id", "$$userId"] }
+                    }
+                },
+                {
+                    $project: {
+                        username: 1,
+                        vehicle: "$captain.vehicle.model",  // ← correct path
+                    }
+                }
+                ],
+                as: "user"
+            }
+        },
+        {
+            $unwind: {
+                path: "$user",
+                preserveNullAndEmptyArrays: true
+            }
+        },
+        {
+            $project: {
+                _id: 1,
+                amount: 1,
+                status: 1,
+                createdAt: 1,
+                transactionId: 1,
+                captainUsername: "$user.username",
+                vehicle: "$user.vehicle",
+                pickupLocation: "$ride.pickupLocation",
+                dropLocation: "$ride.dropLocation",
+                distance: "$ride.distance",
+                duration: "$ride.duration"
+            }
+        }
+    ]);
+
+    const total = await Payment.countDocuments(matchStage)
+
+    return { success: true, payments: JSON.parse(JSON.stringify(payments)), nextPage: skip + limit < total ? page + 1 : null };
 }

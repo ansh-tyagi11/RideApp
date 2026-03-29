@@ -137,6 +137,7 @@ const page = () => {
                                                         if (el) {
                                                             setHighlighted(item._id);
                                                             el.scrollIntoView({ behavior: "smooth", block: "center" });
+                                                            setTimeout(() => setHighlighted(null), 2000);
                                                         }
                                                     }}
                                                     className="px-4 py-2 hover:bg-[#137fec]/10 dark:hover:bg-[#137fec]/20 cursor-pointer rounded-md"
@@ -258,7 +259,7 @@ const page = () => {
 
                     <div ref={loadMoreRef} className="mt-8 flex flex-col items-center gap-3 py-6">
                         {isFetchingNextPage && (
-                            <div className="flex items-center justify-center h-screen">
+                            <div className="flex items-center justify-center">
                                 <span className="animate-spin material-symbols-outlined text-4xl text-[#137fec]">
                                     progress_activity
                                 </span>

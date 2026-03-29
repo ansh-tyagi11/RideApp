@@ -40,6 +40,11 @@ export default function CaptainDuringRide() {
         let verifyRes = await forVerifyRideId(rideId);
         if (!verifyRes.success) return router.push("/captain-home");
 
+        const activeRideId = sessionStorage.getItem("activeRideId");
+        if (!activeRideId) {
+            sessionStorage.setItem("activeRideId", rideId);
+        }
+
         let status = verifyRes.ride?.status;
         const idx = rideSteps.indexOf(status);
 

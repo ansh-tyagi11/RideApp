@@ -1,18 +1,64 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import useUser from '@/hooks/useUser';
+import { forAllRiderPayments } from '@/actions/useractions';
+import { useInfiniteQuery } from '@tanstack/react-query';
 
 const page = () => {
     const [input, setInput] = useState('');
-    const [debounced, setDebounced] = useState('');
+    const [debouncedInput, setDebouncedInput] = useState('');
+    const { user } = useUser();
+    const [filter, setFilter] = useState("All Payments");
+    const loadMoreRef = useRef(null);
+    const [highlighted, setHighlighted] = useState(null);
 
+    const fetchPayments = useCallback(async ({ pageParam = 1 }) => {
+        const response = await forAllRiderPayments(user?.email, filter, pageParam);
+        return response;
+    }, [user?.email, filter])
+
+    const {
+        data,
+        fetchNextPage,
+        isFetchingNextPage,
+        hasNextPage
+    } = useInfiniteQuery({
+        queryKey: ["rider-payments", user?.email, filter],
+        queryFn: fetchPayments,
+        initialPageParam: 1,
+        getNextPageParam: (lastPage) => lastPage?.nextPage ?? undefined,
+        enabled: !!user?.email
+    })
+
+    const payments = data?.pages?.flatMap((page) => page?.payments ?? []) ?? [];
+
+    console.log(payments)
 
     useEffect(() => {
         const timer = setTimeout(() => {
-            setDebounced(input)
+            setDebouncedInput(input)
         }, 500)
 
         return () => clearTimeout(timer)
     }, [input])
+
+    useEffect(() => {
+        const el = loadMoreRef.current;
+        if (!el) return;
+
+        const observer = new IntersectionObserver((entries) => {
+            let first = entries[0]
+
+            if (first.isIntersecting && hasNextPage && !isFetchingNextPage) {
+                fetchNextPage()
+            }
+        }, { threshold: 0.1 })
+
+        observer.observe(el);
+
+        return () => observer.disconnect()
+
+    }, [isFetchingNextPage, hasNextPage, fetchNextPage])
 
     const rides = [
         {
@@ -29,11 +75,59 @@ const page = () => {
         }
     ];
 
-    const match = rides.filter(ride =>
-        ride.destination.toLowerCase().includes(input.toLowerCase()) ||
-        ride.date.includes(input)
-    )
+    const fmtDate = (iso) =>
+        new Date(iso).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" });
 
+    const fmtTime = (iso) =>
+        new Date(iso).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+
+    const match = payments.filter((p) => {
+        const formattedDate = fmtDate(p.createdAt);
+        const search = debouncedInput.toLowerCase();
+
+        return (
+            p.pickupLocation?.toLowerCase().includes(search) ||
+            p.dropLocation?.toLowerCase().includes(search) ||
+            formattedDate?.includes(search) ||
+            p.transactionId?.toString().includes(search) ||
+            p.captainUsername.toLowerCase().includes(search) ||
+            p.vehicle.toLowerCase().includes(search)
+        )
+    })
+
+    const StatCard = ({ label, value, positive, icon, iconBg, iconColor }) => (
+        <div className="flex flex-col gap-4 rounded-2xl p-5 bg-white dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700/50 shadow-sm">
+            <div className="flex items-center justify-between">
+                <p className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">{label}</p>
+                <div className={`p-1.5 ${iconBg} rounded-xl ${iconColor}`}>
+                    <span className="material-symbols-outlined" style={{ fontSize: 18 }}>{icon}</span>
+                </div>
+            </div>
+            <div>
+                <p className="text-[28px] font-black text-slate-800 dark:text-white tracking-tight leading-none mb-2">{value}</p>
+                <p className={`text-xs font-semibold flex items-center gap-1.5 ${positive ? "text-emerald-600 dark:text-emerald-400" : "text-red-500 dark:text-red-400"}`}>
+                    {/* <span>{change}</span> */}
+                    <span className="text-slate-400 dark:text-slate-500 font-normal">vs last month</span>
+                </p>
+            </div>
+        </div>
+    );
+
+    const formatINR = (amount) =>
+        new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            maximumFractionDigits: 0,
+        }).format((amount ?? 0));
+
+    const totalSpent = formatINR(
+        payments
+            .filter((p) => p?.status === "completed")
+            .reduce((s, p) => s + (p?.amount ?? 0), 0)
+    );
+
+    const rideCount = payments.filter((p) => p?.status === "completed").length;
+    const canceledCount = payments.filter((p) => p?.status === "canceled").length;
 
     return (
         <>
@@ -43,22 +137,22 @@ const page = () => {
                     {/* Scrollable Content */}
                     <div className="flex-1 overflow-y-auto p-4 px-8 md:p-8">
                         <div className="max-w-250 mx-auto flex flex-col gap-8 pb-10">
-                        {/* Top Header Area */}
-                        <header className="hidden md:flex items-center justify-between py-5 bg-[#f6f6f8] dark:bg-[#101622] border-b border-transparent shrink-0">
-                            <div>
-                                <h2 className="text-[#111318] dark:text-white text-2xl font-bold leading-tight">Payment History</h2>
-                            </div>
-                            <div className="flex items-center gap-4">
-                                <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1a202c] border border-[#dbdfe6] dark:border-gray-700 rounded-lg text-sm font-medium text-[#111318] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
-                                    <span className="material-symbols-outlined text-[20px]">cloud_download</span>
-                                    Download Statement
-                                </button>
-                                <button className="relative p-2 rounded-full bg-white dark:bg-[#1a202c] text-[#111318] dark:text-white border border-[#dbdfe6] dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
-                                    <span className="material-symbols-outlined">notifications</span>
-                                    <span className="absolute top-2 right-2 size-2 bg-red-500 rounded-full border border-white dark:border-[#1a202c]"></span>
-                                </button>
-                            </div>
-                        </header>
+                            {/* Top Header Area */}
+                            <header className="hidden md:flex items-center justify-between py-5 bg-[#f6f6f8] dark:bg-[#101622] border-b border-transparent shrink-0">
+                                <div>
+                                    <h2 className="text-[#111318] dark:text-white text-2xl font-bold leading-tight">Payment History</h2>
+                                </div>
+                                <div className="flex items-center gap-4">
+                                    <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-[#1a202c] border border-[#dbdfe6] dark:border-gray-700 rounded-lg text-sm font-medium text-[#111318] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+                                        <span className="material-symbols-outlined text-[20px]">cloud_download</span>
+                                        Download Statement
+                                    </button>
+                                    <button className="relative p-2 rounded-full bg-white dark:bg-[#1a202c] text-[#111318] dark:text-white border border-[#dbdfe6] dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors shadow-sm">
+                                        <span className="material-symbols-outlined">notifications</span>
+                                        <span className="absolute top-2 right-2 size-2 bg-red-500 rounded-full border border-white dark:border-[#1a202c]"></span>
+                                    </button>
+                                </div>
+                            </header>
                             {/* Page Heading & Context (Mobile Only) */}
                             <div className="md:hidden">
                                 <p className="text-[#111318] dark:text-white text-2xl font-black leading-tight mb-2">
@@ -69,71 +163,25 @@ const page = () => {
                                 </p>
                             </div>
                             {/* Stats Cards */}
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div className="flex flex-col gap-3 rounded-xl p-5 bg-[#ffffff] dark:bg-[#1a202c] border border-[#dbdfe6] dark:border-gray-700/50 shadow-sm">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-[#616f89] dark:text-gray-400 text-sm font-medium uppercase tracking-wider">
-                                            Total Spent</p>
-                                        <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded text-green-700 dark:text-green-400">
-                                            <span className="material-symbols-outlined text-sm">trending_up</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <p className="text-[#111318] dark:text-white text-3xl font-bold tracking-tight mb-1">$452.00</p>
-                                        <p className="text-green-600 dark:text-green-400 text-xs font-medium flex items-center gap-1">
-                                            <span>+12%</span>
-                                            <span className="text-[#616f89] dark:text-gray-400 font-normal">from last month</span>
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col gap-3 rounded-xl p-5 bg-[#ffffff] dark:bg-[#1a202c] border border-[#dbdfe6] dark:border-gray-700/50 shadow-sm">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-[#616f89] dark:text-gray-400 text-sm font-medium uppercase tracking-wider">
-                                            Rides Taken</p>
-                                        <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded text-blue-700 dark:text-blue-400">
-                                            <span className="material-symbols-outlined text-sm">directions_car</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <p className="text-[#111318] dark:text-white text-3xl font-bold tracking-tight mb-1">24</p>
-                                        <p className="text-green-600 dark:text-green-400 text-xs font-medium flex items-center gap-1">
-                                            <span>+4%</span>
-                                            <span className="text-[#616f89] dark:text-gray-400 font-normal">from last month</span>
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="flex flex-col gap-3 rounded-xl p-5 bg-[#ffffff] dark:bg-[#1a202c] border border-[#dbdfe6] dark:border-gray-700/50 shadow-sm">
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-[#616f89] dark:text-gray-400 text-sm font-medium uppercase tracking-wider">
-                                            Canceled Rides</p>
-                                        <div className="p-1.5 bg-red-100 dark:bg-red-900/30 rounded text-red-700 dark:text-red-400">
-                                            <span className="material-symbols-outlined text-sm">cancel</span>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <p className="text-[#111318] dark:text-white text-3xl font-bold tracking-tight mb-1">2</p>
-                                        <p className="text-red-600 dark:text-red-400 text-xs font-medium flex items-center gap-1">
-                                            <span>-10%</span>
-                                            <span className="text-[#616f89] dark:text-gray-400 font-normal">improvement</span>
-                                        </p>
-                                    </div>
-                                </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                                <StatCard label="Total Spent" value={totalSpent} positive icon="payments" iconBg="bg-blue-50 dark:bg-blue-900/20" iconColor="text-blue-600 dark:text-blue-400" />
+                                <StatCard label="Rides Taken" value={rideCount} positive icon="directions_car" iconBg="bg-emerald-50 dark:bg-emerald-900/20" iconColor="text-emerald-600 dark:text-emerald-400" />
+                                <StatCard label="Canceled" value={canceledCount} positive={false} icon="cancel" iconBg="bg-red-50 dark:bg-red-900/20" iconColor="text-red-500 dark:text-red-400" />
                             </div>
+
                             {/* Filters & Search */}
                             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                                 <div className="flex items-center gap-2 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 scrollbar-hide">
-                                    <button className="flex h-9 items-center justify-center rounded-lg bg-[#111318] dark:bg-white text-white dark:text-[#111318] px-4 text-sm font-semibold shadow-sm transition-transform active:scale-95 whitespace-nowrap">
-                                        All Payments
-                                    </button>
-                                    <button className="flex h-9 items-center justify-center rounded-lg bg-white dark:bg-[#1a202c] border border-[#dbdfe6] dark:border-gray-700 text-[#616f89] dark:text-gray-300 px-4 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors whitespace-nowrap">
-                                        Completed
-                                    </button>
-                                    <button className="flex h-9 items-center justify-center rounded-lg bg-white dark:bg-[#1a202c] border border-[#dbdfe6] dark:border-gray-700 text-[#616f89] dark:text-gray-300 px-4 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors whitespace-nowrap">
-                                        Canceled
-                                    </button>
-                                    <button className="flex h-9 items-center justify-center rounded-lg bg-white dark:bg-[#1a202c] border border-[#dbdfe6] dark:border-gray-700 text-[#616f89] dark:text-gray-300 px-4 text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors whitespace-nowrap">
-                                        Pending
-                                    </button>
+                                    {["All Payments", "Completed", "Cancelled", "Pending"].map((f) => {
+                                        return (
+                                            <button key={f} onClick={() => setFilter(f)} className={`${filter === f
+                                                ? "bg-[#111318] text-white dark:bg-white dark:text-black"
+                                                : "bg-white dark:bg-[#1a202c] hover:bg-gray-50 dark:hover:bg-gray-800"
+                                                } flex h-9 items-center justify-center rounded-lg dark:bg-[#1a202c] border border-[#dbdfe6] dark:border-gray-700 text-[#616f89] dark:text-gray-300 px-4 text-sm font-medium  transition-colors whitespace-nowrap cursor-pointer`}>
+                                                {f}
+                                            </button>
+                                        )
+                                    })}
                                 </div>
                                 <div className="relative w-full sm:w-auto">
                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 material-symbols-outlined text-[20px]">search</span>
@@ -144,13 +192,27 @@ const page = () => {
                                         value={input}
                                         onChange={(e) => setInput(e.target.value)}
                                     />
-                                    {debounced.trim() && (
+                                    {debouncedInput.trim() && (
                                         <ul className="absolute top-full left-0 right-0 mt-1 max-h-64 overflow-y-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-lg z-50">
                                             {match.length > 0 ? (
                                                 match.map((item, index) => (
-                                                    <li key={index} className="px-4 py-2 hover:bg-[#137fec]/10 dark:hover:bg-[#137fec]/20 cursor-pointer rounded-md">
-                                                        <div className="text-sm font-semibold">{item.rideId}</div>
-                                                        <div className="text-xs text-slate-500 dark:text-slate-400">{item.destination} • {item.date}</div>
+                                                    <li key={index} onClick={() => {
+                                                        let el = document.getElementById(item._id)
+                                                        if (el) {
+                                                            setHighlighted(item._id);
+                                                            el.scrollIntoView({ behavior: "smooth", block: "center" });
+                                                            setTimeout(() => setHighlighted(null), 2000);
+                                                        }
+                                                    }}
+                                                        className="px-4 py-2 hover:bg-[#137fec]/10 dark:hover:bg-[#137fec]/20 cursor-pointer rounded-md">
+                                                        <div className='flex items-center justify-between'>
+                                                            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">Pick Up:{item.pickupLocation}</div>
+                                                            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">Drop :{item.dropLocation}</div>
+                                                        </div>
+                                                        <div>
+                                                            <div className="text-sm font-semibold uppercase">{item.status} • {fmtDate(item.createdAt)} • ₹{item.amount}</div>
+                                                            <div className="text-sm font-semibold">Transaction ID:{item.transactionId}</div>
+                                                        </div>
                                                     </li>
                                                 ))
                                             ) : (
@@ -161,157 +223,102 @@ const page = () => {
                                 </div>
                             </div>
                             {/* Transaction List */}
-                            <div className="flex flex-col gap-4">
-                                <h3 className="text-xs font-bold text-[#616f89] dark:text-gray-500 uppercase tracking-wider mb-1 px-1">
-                                    October 2023</h3>
-                                {/* Card 1: Completed */}
-                                <div className="group flex flex-col md:flex-row items-start md:items-center justify-between p-5 bg-[#ffffff] dark:bg-[#1a202c] rounded-xl border border-[#f0f2f4] dark:border-gray-700/50 shadow-sm hover:shadow-md hover:border-[#135bec]/20 dark:hover:border-[#135bec]/40 transition-all duration-200">
-                                    <div className="flex items-start gap-4 w-full md:w-auto">
-                                        <div className="size-12 rounded-full bg-[#f0f2f4] dark:bg-gray-800 flex items-center justify-center text-[#111318] dark:text-white shrink-0 group-hover:bg-[#135bec]/10 group-hover:text-[#135bec] transition-colors">
-                                            <span className="material-symbols-outlined">local_taxi</span>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="text-base font-bold text-[#111318] dark:text-white">UberX</h4>
-                                                <span className="text-xs text-[#616f89] dark:text-gray-400">• Oct 24, 2:30 PM</span>
+                            {payments.length > 0 ? (payments.map((payment, index) => {
+                                return (
+                                    <div id={payment?._id} key={payment?._id ?? payment?.rideId ?? index} className="flex flex-col gap-4">
+                                        <div className={`group flex flex-col md:flex-row items-start md:items-center justify-between p-5 bg-[#ffffff] dark:bg-[#1a202c] rounded-xl border shadow-sm hover:shadow-md transition-all duration-200 
+                                                ${highlighted === payment._id ? "border-[#135bec] ring-2 ring-[#135bec]/30"
+                                                : payment.status === "completed" ? "border-[#f0f2f4] dark:border-gray-700/50 hover:border-[#135bec]/20 dark:hover:border-[#135bec]/40"
+                                                    : (payment.status === "canceled" || payment.status === "failed") ? "border-[#f0f2f4] dark:border-gray-700/50 hover:border-red-200 dark:hover:border-red-900/40"
+                                                        : payment.status === "pending" ? "border-yellow-200 dark:border-yellow-900/30" : "border-[#f0f2f4] dark:border-gray-700/50"
+                                            }`}>
+
+                                            <div className="flex items-start gap-4 w-full md:w-auto">
+                                                <div className={`size-12 rounded-full bg-[#f0f2f4] dark:bg-gray-800 flex items-center justify-center text-[#111318] dark:text-white shrink-0 group-hover:bg-[#135bec]/10 transition-colors 
+                                                    ${payment.status === "completed" && "group-hover:text-[#135bec]"} 
+                                                    ${payment.status === "canceled" || payment.status === "failed" && "text-red-600 dark:text-red-400"} 
+                                                    ${payment.status === "pending" && "text-yellow-600 dark:text-yellow-400"}
+                                                    `}>
+
+                                                    <span className="material-symbols-outlined">
+                                                        {payment.status === "completed" && "local_taxi"}
+                                                        {payment.status === "pending" && "schedule"}
+                                                        {(payment.status === "canceled" || payment.status === "failed") && "no_crash"}
+                                                    </span>
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 mb-1">
+                                                        <h4 className="text-base font-bold text-[#111318] dark:text-white">Captain Name: {payment.captainUsername}</h4>
+                                                        <span className="text-xs text-[#616f89] dark:text-gray-400">{fmtDate(payment.createdAt)} • {fmtTime(payment.createdAt)}</span>
+                                                    </div>
+                                                    <h4 className="text-sm text-[#616f89] dark:text-gray-400">Vehicle Name: {payment.vehicle}</h4>
+
+                                                    <div className="flex items-center gap-2 text-sm text-[#616f89] dark:text-gray-400">
+                                                        <span className="material-symbols-outlined text-[16px] text-gray-400">trip_origin</span>
+                                                        <span className="truncate max-w-30 md:max-w-50">Pick Up: {payment.pickupLocation}</span>
+                                                        <span className="material-symbols-outlined text-[16px] text-gray-400">arrow_right_alt</span>
+                                                        <span className="truncate max-w-30 md:max-w-50">Drop: {payment.dropLocation}</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-sm text-[#616f89] dark:text-gray-400">
+                                                        Transaction ID: {payment.transactionId}
+                                                    </div>
+                                                </div>
                                             </div>
-                                            <div className="flex items-center gap-2 text-sm text-[#616f89] dark:text-gray-400">
-                                                <span className="material-symbols-outlined text-[16px] text-gray-400">trip_origin</span>
-                                                <span className="truncate max-w-30 md:max-w-50">Downtown Core</span>
-                                                <span className="material-symbols-outlined text-[16px] text-gray-400">arrow_right_alt</span>
-                                                <span className="truncate max-w-30 md:max-w-50">Intl. Airport T1</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto mt-4 md:mt-0 gap-4 md:gap-1 pl-16 md:pl-0">
-                                        <div className="text-right flex flex-col items-end">
-                                            <p className="text-lg font-bold text-[#135bec] dark:text-blue-400">$45.00</p>
-                                            <div className="flex items-center gap-1 mt-1">
-                                                <span className="size-2 rounded-full bg-green-500"></span>
-                                                <span className="text-xs font-medium text-green-700 dark:text-green-400">Paid</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-3 md:hidden group-hover:flex">
-                                            <button className="text-xs font-medium text-[#616f89] dark:text-gray-400 hover:text-[#135bec] dark:hover:text-white transition-colors">Receipt</button>
-                                            <button className="text-xs font-medium text-[#616f89] dark:text-gray-400 hover:text-[#135bec] dark:hover:text-white transition-colors">Help</button>
-                                        </div>
-                                    </div>
-                                </div>
-                                {/* Card 2: Canceled */}
-                                <div className="group flex flex-col md:flex-row items-start md:items-center justify-between p-5 bg-[#ffffff] dark:bg-[#1a202c] rounded-xl border border-[#f0f2f4] dark:border-gray-700/50 shadow-sm hover:shadow-md hover:border-red-200 dark:hover:border-red-900/40 transition-all duration-200">
-                                    <div className="flex items-start gap-4 w-full md:w-auto">
-                                        <div className="size-12 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
-                                            <span className="material-symbols-outlined">no_crash</span>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="text-base font-bold text-[#111318] dark:text-white">Premium Black</h4>
-                                                <span className="text-xs text-[#616f89] dark:text-gray-400">• Oct 22, 9:00 AM</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm text-[#616f89] dark:text-gray-400">
-                                                <span className="material-symbols-outlined text-[16px] text-gray-400">trip_origin</span>
-                                                <span className="truncate max-w-30 md:max-w-50">42 Wallaby Way</span>
-                                                <span
-                                                    className="material-symbols-outlined text-[16px] text-gray-400">arrow_right_alt</span>
-                                                <span className="truncate max-w-30 md:max-w-50">Central Station</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto mt-4 md:mt-0 gap-4 md:gap-1 pl-16 md:pl-0">
-                                        <div className="text-right flex flex-col items-end">
-                                            <p className="text-lg font-bold text-[#111318] dark:text-gray-200">$5.00</p>
-                                            <div className="flex items-center gap-1 mt-1 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded-full">
-                                                <span className="text-xs font-bold text-red-700 dark:text-red-400">Canceled</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-3 md:hidden group-hover:flex">
-                                            <button
-                                                className="text-xs font-medium text-[#616f89] dark:text-gray-400 hover:text-red-600 transition-colors">Dispute</button>
-                                        </div>
-                                    </div>
-                                </div>
-                                {/* Card 3: Pending */}
-                                <div className="group flex flex-col md:flex-row items-start md:items-center justify-between p-5 bg-[#ffffff] dark:bg-[#1a202c] rounded-xl border border-yellow-200 dark:border-yellow-900/30 shadow-sm hover:shadow-md transition-all duration-200 relative overflow-hidden">
-                                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-yellow-400"></div>
-                                    <div className="flex items-start gap-4 w-full md:w-auto">
-                                        <div className="size-12 rounded-full bg-yellow-50 dark:bg-yellow-900/20 flex items-center justify-center text-yellow-600 dark:text-yellow-400 shrink-0">
-                                            <span className="material-symbols-outlined">schedule</span>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="text-base font-bold text-[#111318] dark:text-white">Standard Ride</h4>
-                                                <span className="text-xs text-[#616f89] dark:text-gray-400">• Oct 21, 6:15 PM</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm text-[#616f89] dark:text-gray-400">
-                                                <span className="material-symbols-outlined text-[16px] text-gray-400">trip_origin</span>
-                                                <span className="truncate max-w-30 md:max-w-50">Tech Park</span>
-                                                <span
-                                                    className="material-symbols-outlined text-[16px] text-gray-400">arrow_right_alt</span>
-                                                <span className="truncate max-w-30 md:max-w-50">Shopping Mall</span>
+                                            <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto mt-4 md:mt-0 gap-4 md:gap-1 pl-16 md:pl-0">
+                                                <div className="text-right flex flex-col items-end">
+                                                    <p className="text-lg font-bold text-[#135bec] dark:text-blue-400">{formatINR(payment.amount)}</p>
+                                                    {payment.status === "completed" && (
+                                                        <div className="flex items-center gap-1 mt-1">
+                                                            <span className="size-2 rounded-full bg-green-500"></span>
+                                                            <span className="text-xs font-medium text-green-700 dark:text-green-400">Paid</span>
+                                                        </div>
+                                                    )}
+                                                    {payment.status === "canceled" && (
+                                                        <div className="text-right flex flex-col items-end">
+                                                            <div className="flex items-center gap-1 mt-1 bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded-full">
+                                                                <span className="text-xs font-bold text-red-700 dark:text-red-400">Canceled</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                    {payment.status === "pending" && (
+                                                        <div className="flex items-center gap-1 mt-1">
+                                                            <span className="size-2 rounded-full bg-yellow-400 animate-pulse"></span>
+                                                            <span className="text-xs font-medium text-yellow-700 dark:text-yellow-400">Processing</span>
+                                                        </div>
+                                                    )}
+                                                    {payment.status === "failed" && (
+                                                        <div className="flex items-center gap-1 mt-1">
+                                                            <span className="size-2 rounded-full bg-red-400 animate-pulse"></span>
+                                                            <span className="text-xs font-medium text-red-700 dark:text-yellow-400">Failed</span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto mt-4 md:mt-0 gap-4 md:gap-1 pl-16 md:pl-0">
-                                        <div className="text-right flex flex-col items-end">
-                                            <p className="text-lg font-bold text-[#111318] dark:text-gray-200">~$12.50</p>
-                                            <div className="flex items-center gap-1 mt-1">
-                                                <span className="size-2 rounded-full bg-yellow-400 animate-pulse"></span>
-                                                <span className="text-xs font-medium text-yellow-700 dark:text-yellow-400">Processing</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-3 md:hidden group-hover:flex">
-                                            <button className="text-xs font-medium text-[#135bec] hover:underline">Track Status</button>
-                                        </div>
+                                )
+                            }))
+                                : (
+                                    <div className="px-4 py-2 text-slate-400 dark:text-slate-500 text-sm mx-auto">No Payments found</div>
+                                )}
+
+                            <div ref={loadMoreRef} className="mt-8 flex flex-col items-center gap-3 py-6">
+                                {isFetchingNextPage && (
+                                    <div className="flex items-center justify-center">
+                                        <span className="animate-spin material-symbols-outlined text-4xl text-[#137fec]">
+                                            progress_activity
+                                        </span>
                                     </div>
-                                </div>
-                                <h3 className="text-xs font-bold text-[#616f89] dark:text-gray-500 uppercase tracking-wider mt-4 mb-1 px-1">
-                                    September 2023</h3>
-                                {/* Card 4: Older Completed */}
-                                <div className="group flex flex-col md:flex-row items-start md:items-center justify-between p-5 bg-[#ffffff] dark:bg-[#1a202c] rounded-xl border border-[#f0f2f4] dark:border-gray-700/50 shadow-sm hover:shadow-md hover:border-[#135bec]/20 dark:hover:border-[#135bec]/40 transition-all duration-200">
-                                    <div className="flex items-start gap-4 w-full md:w-auto">
-                                        <div className="size-12 rounded-full bg-[#f0f2f4] dark:bg-gray-800 flex items-center justify-center text-[#111318] dark:text-white shrink-0 group-hover:bg-[#135bec]/10 group-hover:text-[#135bec] transition-colors">
-                                            <span className="material-symbols-outlined">airport_shuttle</span>
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <h4 className="text-base font-bold text-[#111318] dark:text-white">Airport Shuttle</h4>
-                                                <span className="text-xs text-[#616f89] dark:text-gray-400">• Sept 28, 5:00 AM</span>
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm text-[#616f89] dark:text-gray-400">
-                                                <span className="material-symbols-outlined text-[16px] text-gray-400">trip_origin</span>
-                                                <span className="truncate max-w-30 md:max-w-50">Home</span>
-                                                <span
-                                                    className="material-symbols-outlined text-[16px] text-gray-400">arrow_right_alt</span>
-                                                <span className="truncate max-w-30 md:max-w-50">Intl. Airport T3</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div className="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto mt-4 md:mt-0 gap-4 md:gap-1 pl-16 md:pl-0">
-                                        <div className="text-right flex flex-col items-end">
-                                            <p className="text-lg font-bold text-[#135bec] dark:text-blue-400">$28.00</p>
-                                            <div className="flex items-center gap-1 mt-1">
-                                                <span className="size-2 rounded-full bg-green-500"></span>
-                                                <span className="text-xs font-medium text-green-700 dark:text-green-400">Paid</span>
-                                            </div>
-                                        </div>
-                                        <div className="flex gap-3 md:hidden group-hover:flex">
-                                            <button className="text-xs font-medium text-[#616f89] dark:text-gray-400 hover:text-[#135bec] dark:hover:text-white transition-colors">Receipt</button>
-                                            <button className="text-xs font-medium text-[#616f89] dark:text-gray-400 hover:text-[#135bec] dark:hover:text-white transition-colors">Rebook</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {/* Footer / Load More */}
-                            <div className="flex justify-center pt-4">
-                                <button className="flex items-center gap-2 text-sm font-semibold text-[#616f89] dark:text-gray-400 hover:text-[#135bec] dark:hover:text-white transition-colors">
-                                    Load more transactions
-                                    <span className="material-symbols-outlined text-[18px]">expand_more</span>
-                                </button>
+
+                                )}
+                                {!hasNextPage && payments.length > 0 && (
+                                    <p className="text-slate-400 text-sm font-medium">You've reached the end</p>
+                                )}
                             </div>
                         </div>
                     </div>
-                </main>
-            </div>
+                </main >
+            </div >
         </>
     )
 }
