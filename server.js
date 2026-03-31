@@ -104,15 +104,16 @@ rideStatus.on("connection", (socket) => {
 
         if (!updatedRide) {
             rideStatus.to(rideId).emit("rideRejected", "Ride already accepted");
+            socket.disconnect()
             return;
         }
 
-        socket.emit("redirect", `captain-home/ride?rideId=${rideId}`);
+        rideStatus.emit("redirect", rideId);
     });
 
     socket.on("rideStatus", async (statusInfo) => {
         const { rideId, rideStatus: status } = statusInfo;
-        
+
         const updatedRide = await Rides.findOneAndUpdate(
             { _id: rideId },
             {

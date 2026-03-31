@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import useUser from '@/hooks/useUser';
 import CancelRideButton from './CancelRideButton';
 import { useRideId } from '@/hooks/rideId';
+import socket from '@/lib/socket';
 
 export default function CaptainSearchingPage() {
   const router = useRouter();
@@ -13,6 +14,19 @@ export default function CaptainSearchingPage() {
   const [drop, setDrop] = useState("")
   const [amount, setAmount] = useState("")
   const { user, loading } = useUser();
+
+  useEffect(() => {
+    socket.emit("roomId", rideId);
+
+    socket.on("redirect", (rideId) => {
+      sessionStorage.setItem("activeRideId", rideId);
+      router.push(`/user-home/ride?rideId=${rideId}`)
+    })
+
+    return () => {
+      socket.off("redirect");
+    };
+  }, [])
 
   useEffect(() => {
     if (loading) return;
@@ -47,14 +61,6 @@ export default function CaptainSearchingPage() {
       router.push("/user-home/ride-selection");
     }
   };
-
-  // const cancelRide = async () => {
-  //   await fetch(`/api/mappls/rides?rideId=${rideId}`, {
-  //     method: "PUT"
-  //   })
-  //   toast.success("Ride cancelled successfully.")
-  //   router.push("/user-home/ride-selection")
-  // }
 
   if (loading || !user) {
     return (

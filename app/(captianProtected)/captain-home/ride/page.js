@@ -2,9 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Message from '../../../../components/message';
-import { forVerifyRideId } from '@/actions/useractions';
+import { forRiderInfo, forVerifyRideId } from '@/actions/useractions';
 import { useRideId } from '@/hooks/rideId';
 import socket from '@/lib/socket';
+import { useQuery } from '@tanstack/react-query';
 
 const rideSteps = ['accepted', 'arriving', 'ongoing', 'completed'];
 
@@ -52,6 +53,15 @@ export default function CaptainDuringRide() {
             setStepIdx(idx);
         }
     }
+
+    const { data, isLoading, isError } = useQuery({
+        queryKey: ["rider-info", rideId],
+        queryFn: () => forRiderInfo(rideId),
+        enabled: !!rideId
+    })
+
+    console.log(data);
+
 
     useEffect(() => {
         if (!rideId) return;
@@ -105,6 +115,25 @@ export default function CaptainDuringRide() {
         ongoing: { label: 'Ride in progress', eta: 'ETA 14 mins', color: 'text-green-600 dark:text-green-400' },
         completed: { label: 'Trip complete', eta: 'Arrived', color: 'text-green-600 dark:text-green-400' },
     }[stepKey];
+
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <span className="animate-spin material-symbols-outlined text-4xl text-[#137fec]">
+                    progress_activity
+                </span>
+            </div>
+        );
+    }
+
+    if (isError) {
+        return (
+            <div className="flex flex-col items-center justify-center h-screen gap-3">
+                <span className="material-symbols-outlined text-4xl text-red-500">error</span>
+                <p className="text-red-500 font-semibold">Something went wrong</p>
+            </div>
+        );
+    }
 
     return (
         <div className="bg-[#f6f7f8] dark:bg-[#101a22] text-[#111518] font-display h-screen w-screen md:overflow-hidden flex relative flex-col md:flex-row overflow-x-hidden">

@@ -14,6 +14,7 @@ import { cookies } from "next/headers";
 import { findUserId, findRide } from "@/services/userServices";
 import Rides from "@/models/Rides";
 import Payment from "@/models/Payment";
+import mongoose from "mongoose";
 
 export const createUser = async (data) => {
 
@@ -554,4 +555,46 @@ export async function forAllCaptainPayment(email, filter = "All", page = 1, limi
     const total = await Payment.countDocuments(matchStage)
 
     return { success: true, payments: JSON.parse(JSON.stringify(payments)), nextPage: skip + limit < total ? page + 1 : null }
+}
+
+export async function forRiderInfo(rideId) {
+    await connectDB();
+
+    let user = await Rides.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(rideId) } },
+        {
+            $lookup: {
+                from: "users",
+                let: { userId: "$userId" },
+                pipeline: [{
+                    $match: {
+                        $expr: { $eq: ["_id", "$$userId"] }
+                    }
+                },
+                {
+                    $project: {
+                        username: 1,
+                        phone: 1,
+                    }
+                }
+                ],
+                as: "rider"
+            }
+        }, {
+            $unwind: {
+                path: "$rider",
+                preserveNullAndEmptyArrays: true
+            }
+        }, {
+            $project: {
+                pickupLocation: 1,
+                dropLocation: 1,
+                username: "$rider.username",
+                phone: "$rider.phone"
+            }
+        }
+    ]);
+
+    return { success: true, data: JSON.parse(JSON.stringify(user[0])) }
+
 }

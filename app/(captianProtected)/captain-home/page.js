@@ -20,9 +20,9 @@ const CaptainHomePage = () => {
             toast.error(msg);
         });
 
-        socket.on("redirect", (url) => {
-            sessionStorage.setItem("activeRideId", "69bfac4b9d1929a9d513c2b2");
-            router.push(url);
+        socket.on("redirect", (rideId) => {
+            sessionStorage.setItem("activeRideId", rideId);
+            router.push(`/captain-home/ride?rideId=${rideId}`);
         });
 
         return () => {
@@ -35,7 +35,7 @@ const CaptainHomePage = () => {
     const acceptRide = () => {
         if (!captain) return;
 
-        const rideId = "69bfac4b9d1929a9d513c2b2";
+        const rideId = "69cbfeee80f9f1abdc03c377";
 
         socket.emit("roomId", rideId);
 
