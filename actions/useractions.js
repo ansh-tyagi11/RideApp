@@ -411,7 +411,7 @@ export async function forAllRiderPayments(email, status = "all payments", page =
                 {
                     $project: {
                         username: 1,
-                        vehicle: "$captain.vehicle.model",  // ← correct path
+                        vehicle: "$captain.vehicle.model",
                     }
                 }
                 ],
@@ -444,4 +444,114 @@ export async function forAllRiderPayments(email, status = "all payments", page =
     const total = await Payment.countDocuments(matchStage)
 
     return { success: true, payments: JSON.parse(JSON.stringify(payments)), nextPage: skip + limit < total ? page + 1 : null };
+}
+
+export async function forAllCaptainPayment(email, filter = "All", page = 1, limit = 10) {
+    if (!email) return { success: false, payments: [], nextPage: null };
+
+    await connectDB();
+    let captain = await findUserId(email);
+    if (!captain) return { success: false, payments: [], nextPage: null };
+
+    const { _id } = captain;
+
+    const now = new Date();
+    let dateFilter = {};
+
+    if (filter === "Today") {
+        const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+        dateFilter = { createdAt: { $gte: startOfDay, $lt: endOfDay } };
+
+    } else if (filter === "This Month") {
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+        const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        dateFilter = { createdAt: { $gte: startOfMonth, $lt: endOfMonth } };
+
+    } else if (filter === "This Week") {
+        const dayOfWeek = now.getDay();
+        const startOfWeek = new Date(now);
+        startOfWeek.setDate(now.getDate() - dayOfWeek);
+        startOfWeek.setHours(0, 0, 0, 0);
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 7);
+        dateFilter = { createdAt: { $gte: startOfWeek, $lt: endOfWeek } };
+    }
+
+    const matchStage = ({ captainId: _id, ...dateFilter });
+
+    let skip = (page - 1) * limit;
+
+    let payments = await Payment.aggregate([
+        { $match: matchStage },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+            $lookup: {
+                from: "rides",
+                let: { rideId: "$rideId" },
+                pipeline: [{
+                    $match: {
+                        $expr: { $eq: ["$_id", "$$rideId"] }
+                    }
+                },
+                {
+                    $project: {
+                        pickupLocation: 1,
+                        dropLocation: 1,
+                        distance: 1,
+                    },
+                }
+                ],
+                as: "ride"
+            },
+        },
+        {
+            $unwind: {
+                path: "$ride",
+                preserveNullAndEmptyArrays: true
+            },
+        },
+        {
+            $lookup: {
+                from: "users",
+                let: { userId: "$userId" },
+                pipeline: [{
+                    $match: {
+                        $expr: { $eq: ["$_id", "$$userId"] }
+                    }
+                },
+                {
+                    $project: {
+                        username: 1
+                    }
+                }
+                ],
+                as: "user"
+            }
+        },
+        {
+            $unwind: {
+                path: "$user",
+                preserveNullAndEmptyArrays: true
+            }
+        }, {
+            $project: {
+                _id: 1,
+                amount: 1,
+                status: 1,
+                createdAt: 1,
+                transactionId: 1,
+                distance: "$ride.distance",
+                captainUsername: "$user.username",
+                pickupLocation: "$ride.pickupLocation",
+                dropLocation: "$ride.dropLocation"
+            }
+        }
+    ])
+
+    const total = await Payment.countDocuments(matchStage)
+
+    return { success: true, payments: JSON.parse(JSON.stringify(payments)), nextPage: skip + limit < total ? page + 1 : null }
 }
