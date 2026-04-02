@@ -1,11 +1,12 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Message from '../../../../components/message';
 import { forRiderInfo, forVerifyRideId } from '@/actions/useractions';
 import { useRideId } from '@/hooks/rideId';
 import socket from '@/lib/socket';
 import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
 
 const rideSteps = ['accepted', 'arriving', 'ongoing', 'completed'];
 
@@ -26,54 +27,60 @@ export default function CaptainDuringRide() {
     const stepKey = rideSteps[stepIdx];
     const tripDone = stepKey === 'completed';
 
-    useEffect(() => {
-
-        if (!rideId) {
+    const verifyRide = useCallback(async (id) => {
+        if (!id) {
             setStepIdx(0);
+            return;
         }
 
-        verifyRide(rideId);
-
-        return;
-    }, [])
-
-    const verifyRide = async (rideId) => {
-        let verifyRes = await forVerifyRideId(rideId);
+        let verifyRes = await forVerifyRideId(id);
         if (!verifyRes.success) return router.push("/captain-home");
 
         const activeRideId = sessionStorage.getItem("activeRideId");
         if (!activeRideId) {
-            sessionStorage.setItem("activeRideId", rideId);
+            sessionStorage.setItem("activeRideId", id);
         }
 
         let status = verifyRes.ride?.status;
         const idx = rideSteps.indexOf(status);
 
         if (idx !== -1) {
-            setStepIdx(idx);
+            setStepIdx((prev) => (prev === idx ? prev : idx));
         }
-    }
+    }, [router]);
+
+    useEffect(() => {
+        verifyRide(rideId);
+    }, [rideId, verifyRide]);
 
     const { data, isLoading, isError } = useQuery({
         queryKey: ["rider-info", rideId],
         queryFn: () => forRiderInfo(rideId),
-        enabled: !!rideId
+        enabled: !!rideId,
+        staleTime: 1000 * 60 * 5,
+        refetchOnWindowFocus: false,
+        refetchOnMount: false,
+        refetchOnReconnect: false,
+        retry: 0,
+        select: (res) => res?.data ?? null,
     })
 
+    const rider = data;
     console.log(data);
-
+    console.log("RENDER");
 
     useEffect(() => {
         if (!rideId) return;
 
+        if (!socket.connected) {
+            socket.connect();
+        }
         socket.emit("roomId", rideId);
 
         const handleStatus = (status) => {
             const idx = rideSteps.indexOf(status);
-
-            if (idx !== -1) {
-                setStepIdx(idx);
-            }
+            if (idx === -1) return;
+            setStepIdx((prev) => (prev === idx ? prev : idx));
         };
 
         socket.on("status", handleStatus);
@@ -116,16 +123,6 @@ export default function CaptainDuringRide() {
         completed: { label: 'Trip complete', eta: 'Arrived', color: 'text-green-600 dark:text-green-400' },
     }[stepKey];
 
-    if (isLoading) {
-        return (
-            <div className="flex items-center justify-center h-screen">
-                <span className="animate-spin material-symbols-outlined text-4xl text-[#137fec]">
-                    progress_activity
-                </span>
-            </div>
-        );
-    }
-
     if (isError) {
         return (
             <div className="flex flex-col items-center justify-center h-screen gap-3">
@@ -134,6 +131,8 @@ export default function CaptainDuringRide() {
             </div>
         );
     }
+
+    const isRiderLoading = isLoading || !rider;
 
     return (
         <div className="bg-[#f6f7f8] dark:bg-[#101a22] text-[#111518] font-display h-screen w-screen md:overflow-hidden flex relative flex-col md:flex-row overflow-x-hidden">
@@ -278,19 +277,12 @@ export default function CaptainDuringRide() {
                                     Your Rider
                                 </p>
                                 <h2 className="text-lg font-bold text-[#111518] dark:text-white leading-tight">
-                                    Marcus T.
+                                    {isRiderLoading ? (
+                                        <span className="block h-5 w-28 rounded-md bg-gray-200 dark:bg-[#2f3e4c] animate-pulse" />
+                                    ) : (
+                                        rider?.username ?? "Rider"
+                                    )}
                                 </h2>
-                                <div className="flex items-center gap-1.5 mt-1">
-                                    <span className="text-yellow-500 font-bold text-sm">4.8</span>
-                                    <span className="text-gray-400 text-xs">•</span>
-                                    <span className="text-[#617989] dark:text-gray-400 text-sm font-medium">
-                                        120 trips
-                                    </span>
-                                    <span className="text-gray-400 text-xs">•</span>
-                                    <span className="bg-green-100 dark:bg-green-900/20 text-green-600 dark:text-green-400 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">
-                                        Verified
-                                    </span>
-                                </div>
                             </div>
                             <div className="ml-auto flex gap-2">
                                 {/* Chat Button */}
@@ -302,6 +294,9 @@ export default function CaptainDuringRide() {
                                 </button>
                                 <button className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f0f3f4] dark:bg-[#1A2632] text-[#111518] dark:text-white hover:bg-[#2b9dee]/20 hover:text-[#2b9dee] transition-all">
                                     <span className="material-symbols-outlined text-[20px]">call</span>
+                                    <Link href={rider?.phone ? `tel:${rider.phone}` : "#"}>
+                                        Call
+                                    </Link>
                                 </button>
                             </div>
                         </div>
@@ -346,14 +341,29 @@ export default function CaptainDuringRide() {
                                         : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-[#1A2632]'
                                         }`}
                                 />
-                                <span className="text-[10px] text-gray-400 font-medium mt-1">10:00</span>
+                                <span className="text-[10px] text-gray-400 font-medium mt-1"><span className="text-[10px] text-[#2b9dee] font-medium mt-1">
+                                    {isRiderLoading ? (
+                                        <span className="block h-4 w-48 rounded-md bg-gray-200 dark:bg-[#2f3e4c] animate-pulse" />
+                                    ) : rider?.pickupTime && !isNaN(new Date(rider.pickupTime)) ? (
+                                        new Date(rider.pickupTime).toLocaleTimeString([], {
+                                            hour: "2-digit",
+                                            minute: "2-digit"
+                                        })
+                                    ) : (
+                                        "--:--"
+                                    )}
+                                </span></span>
                             </div>
                             <div className="flex flex-col -mt-1.5">
                                 <p className="text-xs text-[#617989] dark:text-gray-400 font-medium uppercase tracking-wider mb-0.5">
                                     Pick-up
                                 </p>
                                 <p className="text-[#111518] dark:text-white text-sm font-semibold">
-                                    123 Maple Street, Downtown
+                                    {isRiderLoading ? (
+                                        <span className="block h-4 w-48 rounded-md bg-gray-200 dark:bg-[#2f3e4c] animate-pulse" />
+                                    ) : (
+                                        rider?.pickupLocation ?? "Pickup location"
+                                    )}
                                 </p>
                             </div>
                         </div>
@@ -385,7 +395,18 @@ export default function CaptainDuringRide() {
                                         : 'border-[#2b9dee] bg-white dark:bg-[#1A2632]'
                                         }`}
                                 />
-                                <span className="text-[10px] text-[#2b9dee] font-medium mt-1">10:22</span>
+                                <span className="text-[10px] text-[#2b9dee] font-medium mt-1">
+                                    {isRiderLoading ? (
+                                        <span className="block h-4 w-48 rounded-md bg-gray-200 dark:bg-[#2f3e4c] animate-pulse" />
+                                    ) : rider?.pickupTime && !isNaN(new Date(rider.pickupTime)) ? (
+                                        new Date(rider.dropTime).toLocaleTimeString([], {
+                                            hour: "2-digit",
+                                            minute: "2-digit"
+                                        })
+                                    ) : (
+                                        "--:--"
+                                    )}
+                                </span>
                             </div>
                             <div className="flex flex-col -mt-1.5">
                                 <p className="text-xs text-[#617989] dark:text-gray-400 font-medium uppercase tracking-wider mb-0.5">

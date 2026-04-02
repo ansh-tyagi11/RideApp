@@ -525,7 +525,8 @@ export async function forAllCaptainPayment(email, filter = "All", page = 1, limi
                 },
                 {
                     $project: {
-                        username: 1
+                        username: 1,
+                        name: 1
                     }
                 }
                 ],
@@ -545,7 +546,9 @@ export async function forAllCaptainPayment(email, filter = "All", page = 1, limi
                 createdAt: 1,
                 transactionId: 1,
                 distance: "$ride.distance",
-                captainUsername: "$user.username",
+                captainUsername: {
+                    $ifNull: ["$user.username", "$user.name"]
+                },
                 pickupLocation: "$ride.pickupLocation",
                 dropLocation: "$ride.dropLocation"
             }
@@ -560,41 +563,36 @@ export async function forAllCaptainPayment(email, filter = "All", page = 1, limi
 export async function forRiderInfo(rideId) {
     await connectDB();
 
-    let user = await Rides.aggregate([
+    const user = await Rides.aggregate([
         { $match: { _id: new mongoose.Types.ObjectId(rideId) } },
         {
             $lookup: {
                 from: "users",
-                let: { userId: "$userId" },
-                pipeline: [{
-                    $match: {
-                        $expr: { $eq: ["_id", "$$userId"] }
-                    }
-                },
-                {
-                    $project: {
-                        username: 1,
-                        phone: 1,
-                    }
-                }
-                ],
+                localField: "userId",
+                foreignField: "_id",
                 as: "rider"
             }
-        }, {
+        },
+        {
             $unwind: {
                 path: "$rider",
                 preserveNullAndEmptyArrays: true
             }
-        }, {
+        },
+        {
             $project: {
                 pickupLocation: 1,
                 dropLocation: 1,
-                username: "$rider.username",
+                pickupTime: 1,
+                dropTime: 1,
+                username: "$rider.name",
                 phone: "$rider.phone"
             }
         }
     ]);
 
-    return { success: true, data: JSON.parse(JSON.stringify(user[0])) }
-
+    return {
+        success: true,
+        data: JSON.parse(JSON.stringify(user[0])) || null
+    };
 }
