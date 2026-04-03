@@ -583,9 +583,15 @@ export async function forRiderInfo(rideId) {
             $project: {
                 pickupLocation: 1,
                 dropLocation: 1,
+                distance: 1,
+                amount: 1,
+                duration: 1,
+                image: "$rider.image",
                 pickupTime: 1,
                 dropTime: 1,
-                username: "$rider.name",
+                riderUsername: {
+                    $ifNull: ["$rider.username", "$rider.name"]
+                },
                 phone: "$rider.phone"
             }
         }
@@ -594,5 +600,46 @@ export async function forRiderInfo(rideId) {
     return {
         success: true,
         data: JSON.parse(JSON.stringify(user[0])) || null
+    };
+}
+
+export async function forCaptainInfo(rideId) {
+    await connectDB();
+
+    let captain = await Rides.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(rideId) } },
+        {
+            $lookup: {
+                from: "users",
+                localField: "captainId",
+                foreignField: "_id",
+                as: "captain"
+            }
+        }, {
+            $unwind: {
+                path: "$captain",
+                preserveNullAndEmptyArrays: true,
+            }
+        }, {
+            $project: {
+                pickupLocation: 1,
+                dropLocation: 1,
+                pickupTime: 1,
+                dropLocation: 1,
+                image: "$captain.image",
+                captainUsername: {
+                    $ifNull: ["$captain.username", "$captain.name"]
+                },
+                phone: "$captain.phone",
+                vehicleNumber: "$captain.captain.licenceNumber",
+                vehicleModel: "$captain.captain.vehicle.model",
+                totalRides: "$captain.captain.totalRides"
+            }
+        }
+    ])
+
+    return {
+        success: true,
+        data: JSON.parse(JSON.stringify(captain[0])) || null
     };
 }

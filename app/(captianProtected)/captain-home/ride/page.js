@@ -6,7 +6,6 @@ import { forRiderInfo, forVerifyRideId } from '@/actions/useractions';
 import { useRideId } from '@/hooks/rideId';
 import socket from '@/lib/socket';
 import { useQuery } from '@tanstack/react-query';
-import Link from 'next/link';
 
 const rideSteps = ['accepted', 'arriving', 'ongoing', 'completed'];
 
@@ -66,8 +65,6 @@ export default function CaptainDuringRide() {
     })
 
     const rider = data;
-    console.log(data);
-    console.log("RENDER");
 
     useEffect(() => {
         if (!rideId) return;
@@ -134,6 +131,14 @@ export default function CaptainDuringRide() {
 
     const isRiderLoading = isLoading || !rider;
 
+    const fmtTime = (time) => {
+        const h = Math.floor(time / 60);
+        const m = time % 60;
+        if (h === 0) return `${m}min`;
+        if (m === 0) return `${h}h`;
+        return `${h}h ${m}min`;
+    }
+
     return (
         <div className="bg-[#f6f7f8] dark:bg-[#101a22] text-[#111518] font-display h-screen w-screen md:overflow-hidden flex relative flex-col md:flex-row overflow-x-hidden">
 
@@ -195,14 +200,6 @@ export default function CaptainDuringRide() {
                     </div>
                 </div>
 
-                {/* Earnings Chip */}
-                <div className="absolute top-6 right-6 z-10">
-                    <div className="flex items-center gap-2 bg-white/90 dark:bg-[#1A2632]/95 backdrop-blur-md rounded-full px-4 py-2 shadow-md border border-white/40">
-                        <span className="material-symbols-outlined text-green-500 text-sm">payments</span>
-                        <span className="text-sm font-bold text-[#111518] dark:text-white">$18.40</span>
-                    </div>
-                </div>
-
                 {/* Map Controls */}
                 <div className="absolute bottom-8 right-8 flex flex-col gap-3 z-10">
                     <button className="bg-white dark:bg-[#1A2632] hover:bg-gray-50 text-[#111518] dark:text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-95">
@@ -256,13 +253,7 @@ export default function CaptainDuringRide() {
                     <div className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm dark:bg-[#23303C] dark:border-[#2f3e4c]">
                         <div className="flex items-center gap-4 mb-4">
                             <div className="relative">
-                                <div
-                                    className="bg-center bg-no-repeat bg-cover rounded-full w-16 h-16 shadow-inner"
-                                    style={{
-                                        backgroundImage:
-                                            'url("https://lh3.googleusercontent.com/aida-public/AB6AXuAUMnjNfEPLklwVhWx0IRoPWX9jtHVyVdFrz5NsoZhUsVWb5bVVqfgpINfQNcFITzambeyT7L1cVLZ5Z3p7s8fGiIkgn98ebUp5YlEACJw15QuVUfOBMxihs_XBzb8KECZ3j0F1IBHrlnMtPMwk-plex65_l9_T5J3SMoVAxIT9pzz4f2yiNlmXuTiC3gEGmdkPDsWas7PxxPP8Mf1EQwIB8d7udjcT_COCMyhpUdTY5GCtqGGzHLLaeC1YUpxWwu4Q_nKDE09Q1gM")',
-                                    }}
-                                />
+                                <img className="bg-center bg-no-repeat bg-cover rounded-full w-16 h-16 shadow-inner" src={rider?.image} alt="image" />
                                 <div className="absolute -bottom-1 -right-1 bg-white dark:bg-[#23303C] rounded-full p-0.5">
                                     <span
                                         className="material-symbols-outlined text-yellow-500 text-[20px] leading-none"
@@ -280,7 +271,7 @@ export default function CaptainDuringRide() {
                                     {isRiderLoading ? (
                                         <span className="block h-5 w-28 rounded-md bg-gray-200 dark:bg-[#2f3e4c] animate-pulse" />
                                     ) : (
-                                        rider?.username ?? "Rider"
+                                        rider?.riderUsername ?? "Rider"
                                     )}
                                 </h2>
                             </div>
@@ -288,16 +279,13 @@ export default function CaptainDuringRide() {
                                 {/* Chat Button */}
                                 <button
                                     onClick={() => setChatOpen(!chatOpen)}
-                                    className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f0f3f4] dark:bg-[#1A2632] text-[#111518] dark:text-white hover:bg-[#2b9dee]/20 hover:text-[#2b9dee] transition-all"
+                                    className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f0f3f4] dark:bg-[#1A2632] text-[#111518] dark:text-white hover:bg-[#2b9dee]/20 hover:text-[#2b9dee] transition-all cursor-pointer"
                                 >
                                     <span className="material-symbols-outlined text-[20px]">chat</span>
                                 </button>
-                                <button className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f0f3f4] dark:bg-[#1A2632] text-[#111518] dark:text-white hover:bg-[#2b9dee]/20 hover:text-[#2b9dee] transition-all">
+                                <a className="group w-10 h-10 flex items-center justify-center rounded-full bg-[#f0f3f4] dark:bg-[#1A2632] text-[#111518] dark:text-white hover:bg-[#2b9dee]/20 hover:text-[#2b9dee] transition-all" href={rider?.phone ? `tel:${rider.phone}` : "#"}>
                                     <span className="material-symbols-outlined text-[20px]">call</span>
-                                    <Link href={rider?.phone ? `tel:${rider.phone}` : "#"}>
-                                        Call
-                                    </Link>
-                                </button>
+                                </a>
                             </div>
                         </div>
 
@@ -314,16 +302,19 @@ export default function CaptainDuringRide() {
                                         Trip Earnings
                                     </p>
                                     <div className="flex items-center gap-2 mt-0.5">
-                                        <span className="text-green-600 dark:text-green-400 font-bold text-base">$18.40</span>
-                                        <span className="bg-orange-100 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">
-                                            +Surge
-                                        </span>
+                                        <span className="text-green-600 dark:text-green-400 font-bold text-base">{isRiderLoading ? (
+                                            <span className="block h-4 w-48 rounded-md bg-gray-200 dark:bg-[#2f3e4c] animate-pulse" />
+                                        ) : (
+                                            <span>₹{rider?.amount ?? "Amount"}</span>
+                                        )}</span>
                                     </div>
                                 </div>
                             </div>
                             <div className="text-right">
-                                <p className="text-xs text-[#617989] dark:text-gray-400">5.2 miles</p>
-                                <p className="text-xs text-[#617989] dark:text-gray-400 mt-0.5">~22 mins</p>
+                                <p className="text-xs text-[#617989] dark:text-gray-400">Total Distance: {Math.floor(rider?.distance)}km</p>
+                                <p className="text-xs text-[#617989] dark:text-gray-400 mt-0.5">
+                                    Total Time: ~{fmtTime(rider?.duration)}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -398,7 +389,7 @@ export default function CaptainDuringRide() {
                                 <span className="text-[10px] text-[#2b9dee] font-medium mt-1">
                                     {isRiderLoading ? (
                                         <span className="block h-4 w-48 rounded-md bg-gray-200 dark:bg-[#2f3e4c] animate-pulse" />
-                                    ) : rider?.pickupTime && !isNaN(new Date(rider.pickupTime)) ? (
+                                    ) : rider?.dropTime && !isNaN(new Date(rider.pickupTime)) ? (
                                         new Date(rider.dropTime).toLocaleTimeString([], {
                                             hour: "2-digit",
                                             minute: "2-digit"
@@ -413,7 +404,11 @@ export default function CaptainDuringRide() {
                                     Drop-off
                                 </p>
                                 <p className="text-[#111518] dark:text-white text-sm font-semibold">
-                                    456 Tech Park Ave, Suite 200
+                                    {isRiderLoading ? (
+                                        <span className="block h-4 w-48 rounded-md bg-gray-200 dark:bg-[#2f3e4c] animate-pulse" />
+                                    ) : (
+                                        rider?.dropLocation ?? "Drop location"
+                                    )}
                                 </p>
                             </div>
                         </div>
@@ -477,7 +472,7 @@ export default function CaptainDuringRide() {
                                 className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-[#191b25] transition-colors" >
                                 <span className="material-symbols-outlined text-[18px]">close</span>
                             </button>
-                            <Message role="captain" rideId={rideId} />
+                            <Message role="captain" name={rider?.riderUsername} image={rider?.image} onClose={()=>setChatOpen(false)} rideId={rideId} />
                         </div>
                     </div>
                 </>

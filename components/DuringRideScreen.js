@@ -2,9 +2,10 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Message from '@/components/message';
-import { forVerifyRideId } from '@/actions/useractions';
+import { forVerifyRideId, forCaptainInfo } from '@/actions/useractions';
 import CancelRideButton from './CancelRideButton';
 import { useRideId } from '@/hooks/rideId';
+import { useQuery } from '@tanstack/react-query';
 
 export default function DuringRide() {
   const [isActive, setIsActive] = useState(false);
@@ -17,7 +18,7 @@ export default function DuringRide() {
       setStep(0);
     }
     verify(rideId);
-  }, [])
+  }, [rideId])
 
   const verify = async (rideId) => {
     let response = await forVerifyRideId(rideId);
@@ -29,8 +30,41 @@ export default function DuringRide() {
     }
   }
 
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["captain-info", rideId],
+    queryFn: () => forCaptainInfo(rideId),
+    enabled: !!rideId,
+    staleTime: 1000 * 60 * 5,
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: 0,
+    select: (res) => res?.data ?? null,
+  })
+
+  const captain = data;
+
   const handleChange = () => {
     setIsActive(!isActive)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <span className="animate-spin material-symbols-outlined text-4xl text-[#137fec]">
+          progress_activity
+        </span>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center h-screen gap-3">
+        <span className="material-symbols-outlined text-4xl text-red-500">error</span>
+        <p className="text-red-500 font-semibold">Something went wrong</p>
+      </div>
+    );
   }
 
   return (
@@ -152,13 +186,14 @@ export default function DuringRide() {
           <div className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm dark:bg-[#23303C] dark:border-[#2f3e4c]">
             <div className="flex items-center gap-4 mb-4">
               <div className="relative">
-                <div
+                {/* <div
                   className="bg-center bg-no-repeat bg-cover rounded-full w-16 h-16 shadow-inner"
                   style={{
                     backgroundImage:
                       'url("https://lh3.googleusercontent.com/aida-public/AB6AXuDjXMW-0VSQCPdblnTO-LFGAMcuGqEU9bMGJ2m2tHkhwplMQvLvOhKtnlKtLx0EbsMKfMJ58p8iCKoXVTwCDO6dZAPGmE5g5JBJtUdJPRQNmmcSAbqj5z3urYzvp3ajqtyoPyA5g9vm8c9sqKH4zCPIzzfX-5_ejAoFZgNzzkIBkrN1c6y152iCQ80ZH_tX05UziqWyYn3dTS1G3J8D2UUkJJsh5XkRnyHh5Rl6dUWf2UZBMioKTS5U5e-4iPGVpVqXlW0Kid-AId3J")',
                   }}
-                />
+                /> */}
+                <img className="bg-center bg-no-repeat bg-cover rounded-full w-16 h-16 shadow-inner" src={captain?.image} alt="image" />
                 <div className="absolute -bottom-1 -right-1 bg-white dark:bg-[#23303C] rounded-full p-0.5">
                   <span
                     className="material-symbols-outlined text-yellow-500 text-[20px] leading-none"
@@ -170,23 +205,23 @@ export default function DuringRide() {
               </div>
               <div>
                 <h2 className="text-lg font-bold text-[#111518] dark:text-white leading-tight">
-                  Sarah Jenkins
+                  {captain?.captainUsername ?? "Captain Username"}
                 </h2>
                 <div className="flex items-center gap-1.5 mt-1">
                   <span className="text-yellow-500 font-bold text-sm">4.9</span>
                   <span className="text-gray-400 text-xs">•</span>
                   <span className="text-[#617989] dark:text-gray-400 text-sm font-medium">
-                    500+ rides
+                    {captain?.totalRides} rides
                   </span>
                 </div>
               </div>
               <div className="ml-auto flex gap-2">
-                <button onClick={() => setOpen(!open)} className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f0f3f4] dark:bg-[#1A2632] text-[#111518] dark:text-white hover:bg-[#2b9dee]/20 hover:text-[#2b9dee] transition-all">
+                <button onClick={() => setOpen(!open)} className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f0f3f4] dark:bg-[#1A2632] text-[#111518] dark:text-white hover:bg-[#2b9dee]/20 hover:text-[#2b9dee] transition-all cursor-pointer">
                   <span className="material-symbols-outlined text-[20px]">chat</span>
                 </button>
-                <button className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f0f3f4] dark:bg-[#1A2632] text-[#111518] dark:text-white hover:bg-[#2b9dee]/20 hover:text-[#2b9dee] transition-all">
+                <a className="w-10 h-10 flex items-center justify-center rounded-full bg-[#f0f3f4] dark:bg-[#1A2632] text-[#111518] dark:text-white hover:bg-[#2b9dee]/20 hover:text-[#2b9dee] transition-all" href={captain?.phone ? `tel:${captain.phone}` : "#"}>
                   <span className="material-symbols-outlined text-[20px]">call</span>
-                </button>
+                </a>
               </div>
             </div>
             <div className="h-px bg-gray-100 dark:bg-[#2f3e4c] w-full mb-4" />
@@ -201,11 +236,11 @@ export default function DuringRide() {
                 </div>
                 <div>
                   <p className="text-[#111518] dark:text-white font-semibold text-sm">
-                    White Toyota Prius
+                    {captain?.vehicleModel ?? "Captain Name"}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className="bg-gray-100 dark:bg-[#1A2632] text-[#617989] dark:text-gray-300 text-xs font-bold px-1.5 py-0.5 rounded uppercase tracking-wide">
-                      ABC-1234
+                      {captain?.vehicleNumber ?? "Vehicle Number"}
                     </span>
                   </div>
                 </div>
@@ -225,14 +260,22 @@ export default function DuringRide() {
             <div className="flex gap-4 mb-8 group">
               <div className="flex flex-col items-center">
                 <div className="w-4 h-4 rounded-full border-[3px] border-gray-300 bg-white dark:border-gray-600 dark:bg-[#1A2632] shrink-0" />
-                <span className="text-[10px] text-gray-400 font-medium mt-1">10:00</span>
+                <span className="text-[10px] text-gray-400 font-medium mt-1">{captain?.pickupTime && !isNaN(new Date(captain.pickupTime)) ? (
+                  new Date(captain.pickupTime).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  })
+                ) : (
+                  "--:--"
+                )}
+                </span>
               </div>
               <div className="flex flex-col -mt-1.5">
                 <p className="text-xs text-[#617989] dark:text-gray-400 font-medium uppercase tracking-wider mb-0.5">
                   Pick-up
                 </p>
                 <p className="text-[#111518] dark:text-white text-sm font-semibold">
-                  123 Maple Street, Downtown
+                  {captain?.pickupLocation ?? "Pickup Location"}
                 </p>
               </div>
             </div>
@@ -256,14 +299,21 @@ export default function DuringRide() {
             <div className="flex gap-4">
               <div className="flex flex-col items-center">
                 <div className="w-4 h-4 rounded-full border-[3px] border-[#2b9dee] bg-white dark:bg-[#1A2632] shrink-0" />
-                <span className="text-[10px] text-[#2b9dee] font-medium mt-1">10:14</span>
+                <span className="text-[10px] text-[#2b9dee] font-medium mt-1">{captain?.dropTime && !isNaN(new Date(captain.dropTime)) ? (
+                  new Date(captain.dropTime).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  })
+                ) : (
+                  "--:--"
+                )}</span>
               </div>
               <div className="flex flex-col -mt-1.5">
                 <p className="text-xs text-[#617989] dark:text-gray-400 font-medium uppercase tracking-wider mb-0.5">
                   Drop-off
                 </p>
                 <p className="text-[#111518] dark:text-white text-sm font-semibold">
-                  456 Tech Park Ave, Suite 200
+                  {captain?.dropLocation ?? "Drop Location"}
                 </p>
               </div>
             </div>
@@ -314,11 +364,19 @@ export default function DuringRide() {
           <div className="fixed z-50 bottom-6 right-6 md:bottom-10 md:right-8 w-[calc(100vw-3rem)] max-w-sm shadow-2xl rounded-2xl overflow-hidden animate-popup-in">
             {/* Close button sits above the Message component */}
             <div className="relative">
-              <button onClick={() => setOpen(false)}
-                className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-[#191b25] transition-colors" >
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-[#191b25] transition-colors">
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
-              <Message role="user" rideId={rideId} />
+              <Message
+                role="user"
+                name={captain?.captainUsername}
+                image={captain?.image}
+                rideId={rideId}
+                onClose={() => setOpen(false)}
+              />
             </div>
           </div>
         </>
