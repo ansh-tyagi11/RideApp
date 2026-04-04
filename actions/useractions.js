@@ -625,6 +625,7 @@ export async function forCaptainInfo(rideId) {
                 pickupLocation: 1,
                 dropLocation: 1,
                 pickupTime: 1,
+                dropTime: 1,
                 dropLocation: 1,
                 image: "$captain.image",
                 captainUsername: {

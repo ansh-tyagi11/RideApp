@@ -95,7 +95,7 @@ rideStatus.on("connection", (socket) => {
             { _id: rideId, status: "searching" },
             {
                 $set: {
-                    status: "Accepted",
+                    status: "accepted",
                     captainId: captainId
                 }
             },
@@ -113,18 +113,35 @@ rideStatus.on("connection", (socket) => {
 
     socket.on("rideStatus", async (statusInfo) => {
         const { rideId, rideStatus: status } = statusInfo;
+        const normalizedStatus = String(status || "").toLowerCase();
 
         const updatedRide = await Rides.findOneAndUpdate(
             { _id: rideId },
-            {
-                $set: {
-                    status: status,
+            [
+                {
+                    $set: {
+                        status: normalizedStatus,
+                        pickupTime: {
+                            $cond: [
+                                { $eq: [normalizedStatus, "ongoing"] },
+                                { $ifNull: ["$pickupTime", "$$NOW"] },
+                                "$pickupTime"
+                            ]
+                        },
+                        dropTime: {
+                            $cond: [
+                                { $eq: [normalizedStatus, "completed"] },
+                                { $ifNull: ["$dropTime", "$$NOW"] },
+                                "$dropTime"
+                            ]
+                        }
+                    }
                 }
-            },
-            { new: true }
+            ],
+            { new: true, updatePipeline: true }
         );
 
-        rideStatus.to(rideId).emit("status", status);
+        rideStatus.to(rideId).emit("status", normalizedStatus);
 
     })
 });

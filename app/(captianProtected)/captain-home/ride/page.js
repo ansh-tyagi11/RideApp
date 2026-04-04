@@ -52,7 +52,7 @@ export default function CaptainDuringRide() {
         verifyRide(rideId);
     }, [rideId, verifyRide]);
 
-    const { data, isLoading, isError } = useQuery({
+    const { data, isLoading, isError, refetch } = useQuery({
         queryKey: ["rider-info", rideId],
         queryFn: () => forRiderInfo(rideId),
         enabled: !!rideId,
@@ -78,6 +78,9 @@ export default function CaptainDuringRide() {
             const idx = rideSteps.indexOf(status);
             if (idx === -1) return;
             setStepIdx((prev) => (prev === idx ? prev : idx));
+            if (status === "ongoing" || status === "completed") {
+                refetch();
+            }
         };
 
         socket.on("status", handleStatus);
@@ -85,7 +88,7 @@ export default function CaptainDuringRide() {
         return () => {
             socket.off("status", handleStatus);
         };
-    }, [rideId]);
+    }, [rideId, refetch]);
 
     const advanceStep = () => {
 
@@ -472,7 +475,7 @@ export default function CaptainDuringRide() {
                                 className="absolute top-3 right-3 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-black/10 hover:bg-black/20 text-[#191b25] transition-colors" >
                                 <span className="material-symbols-outlined text-[18px]">close</span>
                             </button>
-                            <Message role="captain" name={rider?.riderUsername} image={rider?.image} onClose={()=>setChatOpen(false)} rideId={rideId} />
+                            <Message role="captain" name={rider?.riderUsername} image={rider?.image} onClose={() => setChatOpen(false)} rideId={rideId} />
                         </div>
                     </div>
                 </>

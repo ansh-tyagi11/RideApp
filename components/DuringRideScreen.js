@@ -1,36 +1,24 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Message from '@/components/message';
 import { forVerifyRideId, forCaptainInfo } from '@/actions/useractions';
 import CancelRideButton from './CancelRideButton';
 import { useRideId } from '@/hooks/rideId';
 import { useQuery } from '@tanstack/react-query';
+import socket from '@/lib/socket';
+
+const rideSteps = ['accepted', 'arriving', 'ongoing', 'completed'];
 
 export default function DuringRide() {
   const [isActive, setIsActive] = useState(false);
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const rideId = useRideId();
+  const [stepIdx, setStepIdx] = useState(0);
+  const stepKey = rideSteps[stepIdx];
 
-  useEffect(() => {
-    if (!rideId) {
-      setStep(0);
-    }
-    verify(rideId);
-  }, [rideId])
-
-  const verify = async (rideId) => {
-    let response = await forVerifyRideId(rideId);
-    if (!response.success) return router.push("/ride-selection");
-    const activeRideId = sessionStorage.getItem("activeRideId");
-
-    if (!activeRideId) {
-      sessionStorage.setItem("activeRideId", rideId);
-    }
-  }
-
-  const { data, isLoading, isError } = useQuery({
+  const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["captain-info", rideId],
     queryFn: () => forCaptainInfo(rideId),
     enabled: !!rideId,
@@ -41,6 +29,67 @@ export default function DuringRide() {
     retry: 0,
     select: (res) => res?.data ?? null,
   })
+
+  useEffect(() => {
+    if (!rideId) {
+      setStep(0);
+    }
+    verify(rideId);
+  }, [rideId])
+
+  const verify = useCallback(async (rideId) => {
+    let response = await forVerifyRideId(rideId);
+    if (!response.success) return router.push("/ride-selection");
+
+    const activeRideId = sessionStorage.getItem("activeRideId");
+    if (!activeRideId) {
+      sessionStorage.setItem("activeRideId", rideId);
+    }
+
+    let status = response.ride?.status;
+    const idx = rideSteps.indexOf(status);
+
+    if (idx !== -1) {
+      setStepIdx((prev) => (prev === idx ? prev : idx));
+    }
+
+    if (!activeRideId) {
+      sessionStorage.setItem("activeRideId", rideId);
+    }
+  }, [router])
+
+  const etaInfo = {
+    accepted: { label: 'Heading to you', eta: 'ETA 8 mins', color: 'text-blue-500 dark:text-blue-400' },
+    arriving: { label: 'Captain has arrived', eta: 'Arrived', color: 'text-yellow-500 dark:text-yellow-400' },
+    ongoing: { label: 'Ride in progress', eta: 'ETA 14 mins', color: 'text-green-600 dark:text-green-400' },
+    completed: { label: 'Trip complete', eta: 'Arrived', color: 'text-green-600 dark:text-green-400' },
+  }[stepKey];
+
+  useEffect(() => {
+    if (!rideId) return;
+
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    socket.emit("roomId", rideId);
+
+    const handleStatus = (status) => {
+      const idx = rideSteps.indexOf(status);
+      if (idx === -1) return;
+      setStepIdx((prev) => (prev === idx ? prev : idx));
+      if (status === "ongoing" || status === "completed") {
+        refetch();
+      }
+    };
+
+    socket.on("status", handleStatus);
+
+    return () => {
+      socket.off("status", handleStatus);
+    };
+
+  }, [rideId, refetch])
 
   const captain = data;
 
@@ -136,11 +185,13 @@ export default function DuringRide() {
             </div>
             <div className="flex flex-col">
               <h3 className="text-base font-bold text-[#111518] dark:text-white leading-tight">
-                Ride in progress
+                {etaInfo.label}
               </h3>
-              <p className="text-sm text-green-600 dark:text-green-400 font-medium">
-                ETA 14 mins{' '}
-                <span className="text-[#617989] font-normal">• On time</span>
+              <p className={`text-sm font-medium ${etaInfo.color}`}>
+                {etaInfo.eta}{' '}
+                {stepKey === 'accepted' && (
+                  <span className="text-[#617989] font-normal">• 2.4 miles</span>
+                )}
               </p>
             </div>
           </div>
@@ -186,13 +237,6 @@ export default function DuringRide() {
           <div className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm dark:bg-[#23303C] dark:border-[#2f3e4c]">
             <div className="flex items-center gap-4 mb-4">
               <div className="relative">
-                {/* <div
-                  className="bg-center bg-no-repeat bg-cover rounded-full w-16 h-16 shadow-inner"
-                  style={{
-                    backgroundImage:
-                      'url("https://lh3.googleusercontent.com/aida-public/AB6AXuDjXMW-0VSQCPdblnTO-LFGAMcuGqEU9bMGJ2m2tHkhwplMQvLvOhKtnlKtLx0EbsMKfMJ58p8iCKoXVTwCDO6dZAPGmE5g5JBJtUdJPRQNmmcSAbqj5z3urYzvp3ajqtyoPyA5g9vm8c9sqKH4zCPIzzfX-5_ejAoFZgNzzkIBkrN1c6y152iCQ80ZH_tX05UziqWyYn3dTS1G3J8D2UUkJJsh5XkRnyHh5Rl6dUWf2UZBMioKTS5U5e-4iPGVpVqXlW0Kid-AId3J")',
-                  }}
-                /> */}
                 <img className="bg-center bg-no-repeat bg-cover rounded-full w-16 h-16 shadow-inner" src={captain?.image} alt="image" />
                 <div className="absolute -bottom-1 -right-1 bg-white dark:bg-[#23303C] rounded-full p-0.5">
                   <span
@@ -261,7 +305,7 @@ export default function DuringRide() {
               <div className="flex flex-col items-center">
                 <div className="w-4 h-4 rounded-full border-[3px] border-gray-300 bg-white dark:border-gray-600 dark:bg-[#1A2632] shrink-0" />
                 <span className="text-[10px] text-gray-400 font-medium mt-1">{captain?.pickupTime && !isNaN(new Date(captain.pickupTime)) ? (
-                  new Date(captain.pickupTime).toLocaleTimeString([], {
+                  new Date(captain.pickupTime).toLocaleTimeString("en-US", {
                     hour: "2-digit",
                     minute: "2-digit"
                   })
@@ -300,7 +344,7 @@ export default function DuringRide() {
               <div className="flex flex-col items-center">
                 <div className="w-4 h-4 rounded-full border-[3px] border-[#2b9dee] bg-white dark:bg-[#1A2632] shrink-0" />
                 <span className="text-[10px] text-[#2b9dee] font-medium mt-1">{captain?.dropTime && !isNaN(new Date(captain.dropTime)) ? (
-                  new Date(captain.dropTime).toLocaleTimeString([], {
+                  new Date(captain.dropTime).toLocaleTimeString("en-US", {
                     hour: "2-digit",
                     minute: "2-digit"
                   })
