@@ -15,6 +15,7 @@ import { findUserId, findRide } from "@/services/userServices";
 import Rides from "@/models/Rides";
 import Payment from "@/models/Payment";
 import mongoose from "mongoose";
+import Razorpay from "razorpay";
 
 export const createUser = async (data) => {
 
@@ -403,25 +404,26 @@ export async function forAllRiderPayments(email, status = "all payments", page =
         {
             $lookup: {
                 from: "users",
-                let: { userId: "$userId" },
+                let: { captainId: "$captainId" },
                 pipeline: [{
                     $match: {
-                        $expr: { $eq: ["$_id", "$$userId"] }
+                        $expr: { $eq: ["$_id", "$$captainId"] }
                     }
                 },
                 {
                     $project: {
                         username: 1,
+                        name: 1,
                         vehicle: "$captain.vehicle.model",
                     }
                 }
                 ],
-                as: "user"
+                as: "captain"
             }
         },
         {
             $unwind: {
-                path: "$user",
+                path: "$captain",
                 preserveNullAndEmptyArrays: true
             }
         },
@@ -432,8 +434,10 @@ export async function forAllRiderPayments(email, status = "all payments", page =
                 status: 1,
                 createdAt: 1,
                 transactionId: 1,
-                captainUsername: "$user.username",
-                vehicle: "$user.vehicle",
+                captainUsername: {
+                    $ifNull: ["$captain.username", "$captain.name"]
+                },
+                vehicle: "$captain.vehicle",
                 pickupLocation: "$ride.pickupLocation",
                 dropLocation: "$ride.dropLocation",
                 distance: "$ride.distance",
@@ -643,4 +647,77 @@ export async function forCaptainInfo(rideId) {
         success: true,
         data: JSON.parse(JSON.stringify(captain[0])) || null
     };
+}
+
+export async function amount(rideId) {
+    await connectDB();
+
+    let captain = await Rides.aggregate([
+        { $match: { _id: new mongoose.Types.ObjectId(rideId) } },
+        {
+            $lookup: {
+                from: "users",
+                localField: "captainId",
+                foreignField: "_id",
+                as: "captain"
+            }
+        }, {
+            $unwind: {
+                path: "$captain",
+                preserveNullAndEmptyArrays: true,
+            }
+        }, {
+            $project: {
+                amount: 1,
+                image: "$captain.image",
+                captainUsername: {
+                    $ifNull: ["$captain.username", "$captain.name"]
+                },
+            }
+        }
+    ])
+
+    return {
+        success: true,
+        data: JSON.parse(JSON.stringify(captain[0])) || null
+    };
+
+}
+
+export async function initiate(rideId, tip) {
+    await connectDB();
+
+    let ride = await findRide(rideId);
+
+    const { _id, userId, captainId, amount } = ride.ride
+
+    var instance = new Razorpay({ key_id: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID, key_secret: process.env.NEXT_PUBLIC_RAZORPAY_KEY_SECRET })
+
+    const safeTip = Math.max(0, Number(tip) || 0);
+    let totalAmount = amount + safeTip;
+
+    let options = {
+        amount: Number.parseInt(totalAmount * 100),
+        currency: "INR"
+    }
+
+    let paymentOptions = await instance.orders.create(options);
+
+    let platformFee = amount * (20 / 100);
+    let captainEarning = amount - platformFee + safeTip;
+
+    await Payment.create({
+        rideId: _id,
+        userId: userId,
+        captainId: captainId,
+        amount: amount,
+        tip: safeTip,
+        totalAmount: totalAmount,
+        orderId: paymentOptions.id,
+        platformFee: platformFee,
+        captainEarning: captainEarning
+    })
+
+    return { paymentOptions, totalAmount: totalAmount * 100 };
+
 }

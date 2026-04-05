@@ -85,6 +85,13 @@ export default function DuringRide() {
 
     socket.on("status", handleStatus);
 
+    socket.on("riderLocation", (location) => {
+      console.log(location)
+    })
+
+    const handleReconnect = () => socket.emit("roomId", rideId);
+    socket.on("reconnect", handleReconnect);
+
     return () => {
       socket.off("status", handleStatus);
     };

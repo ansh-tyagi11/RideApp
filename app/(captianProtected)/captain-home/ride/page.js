@@ -1,5 +1,5 @@
 "use client";
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Message from '../../../../components/message';
 import { forRiderInfo, forVerifyRideId } from '@/actions/useractions';
@@ -66,29 +66,83 @@ export default function CaptainDuringRide() {
 
     const rider = data;
 
+    const watchId = useRef(null);
+    const lastPositionRef = useRef(null);
+    const intervalId = useRef(null);
+
     useEffect(() => {
         if (!rideId) return;
 
-        if (!socket.connected) {
-            socket.connect();
-        }
+        if (!socket.connected) socket.connect();
         socket.emit("roomId", rideId);
 
         const handleStatus = (status) => {
             const idx = rideSteps.indexOf(status);
             if (idx === -1) return;
             setStepIdx((prev) => (prev === idx ? prev : idx));
-            if (status === "ongoing" || status === "completed") {
-                refetch();
+            if (status === "ongoing" || status === "completed") refetch();
+            if (status === "completed") stopTracking();
+        };
+
+        const stopTracking = () => {
+            if (watchId.current !== null) {
+                navigator.geolocation.clearWatch(watchId.current);
+                watchId.current = null;
             }
         };
 
+        const hasMoved = (prev, curr) => {
+            if (!prev) return true;
+
+            const R = 6371000;
+            const dLat = (curr.latitude - prev.latitude) * (Math.PI / 180);
+            const dLon = (curr.longitude - prev.longitude) * (Math.PI / 180);
+
+            const a = Math.sin(dLat / 2) ** 2 +
+                Math.cos(prev.latitude * Math.PI / 180) *
+                Math.cos(curr.latitude * Math.PI / 180) *
+                Math.sin(dLon / 2) ** 2;
+
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) > 10;
+        };
+
+        const handleLocation = () => {
+            if (!navigator.geolocation) return;
+
+            watchId.current = navigator.geolocation.watchPosition(
+                (position) => {
+                    if (hasMoved(lastPositionRef.current, position.coords)) {
+                        lastPositionRef.current = position.coords;
+                        socket.emit("captainLocation", position.coords);
+                    }
+                },
+                (error) => {
+                    if (error && error.code === error.TIMEOUT) return;
+                    console.error("Geolocation error:", error.message);
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 2000 }
+
+            );
+            intervalId.current = setInterval(() => {
+                console.log("Last known position:", lastPositionRef.current);
+                socket.emit("captainLocation", lastPositionRef.current);
+            }, 5000);
+        };
+
+        const handleReconnect = () => socket.emit("roomId", rideId);
+
+        const timer = setTimeout(handleLocation, 3000);
+
         socket.on("status", handleStatus);
+        socket.on("reconnect", handleReconnect);
 
         return () => {
+            clearTimeout(timer);
+            stopTracking();
             socket.off("status", handleStatus);
+            socket.off("reconnect", handleReconnect);
         };
-    }, [rideId, refetch]);
+    }, [rideId, refetch,socket]);
 
     const advanceStep = () => {
 

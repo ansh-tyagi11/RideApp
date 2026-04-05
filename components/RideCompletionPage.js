@@ -1,37 +1,81 @@
 "use client";
-import React from 'react';
-//import Script from 'next/script';
+import React, { useEffect, useState } from 'react';
+import Script from 'next/script';
+import { useRideId } from '@/hooks/rideId';
+import { initiate, amount } from '@/actions/useractions';
 
 export default function RideCompletion() {
+    const rideId = useRideId();
+    const [tip, setTip] = useState(3);
+    const [fareAmount, setFareAmount] = useState(null);
+    const [custom, setCustom] = useState(false);
+    const [input, setInput] = useState(0);
+    const [name, setName] = useState(null);
+    const [image, setImage] = useState(null);
 
-    // const openRazorpay = async (amount) => {
-    //     let a = await initiate(amount, paymentForm, currentUser.username);
-    //     let orderId = a.id;
-    //     var options = {
-    //         key: currentUser.razorPayId,
-    //         amount: amount,
-    //         currency: "INR",
-    //         name: `${currentUser.username}`,
-    //         description: "Test Transaction",
-    //         image: `${image}`,
-    //         order_id: orderId,
-    //         callback_url: "http://localhost:3000/api/razorpay",
-    //         prefill: {
-    //             name: "User",
-    //             email: "user@example.com",
-    //             contact: "9999999999",
-    //         },
-    //         notes: {
-    //             address: "Razorpay Corporate Office",
-    //         },
-    //         theme: {
-    //             color: "#3399cc",
-    //         },
-    //     };
+    useEffect(() => {
+        fetchAmount()
+    }, [rideId])
 
-    //     const rzp1 = new window.Razorpay(options);
-    //     rzp1.open();
-    // };
+    const fetchAmount = async () => {
+        let response = await amount(rideId);
+        
+        setFareAmount(response.data.amount);
+        setName(response.data.captainUsername)
+        setImage(response.data.image)
+    }
+
+    const totalAmount = (amount, tip) => {
+        return amount + tip;
+    }
+
+    const formatInr = (value) => {
+        return new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(Number(value) || 0);
+    }
+
+    const computedTotal = totalAmount(fareAmount ?? 0, tip);
+
+    const handleCustom = () => {
+        setCustom((prev) => !prev);
+        if (!custom) {
+            return setTip(0)
+        }
+        return setTip(3);
+    }
+
+    const openRazorpay = async (tip) => {
+        let a = await initiate(rideId, tip);
+        let orderId = a.paymentOptions.id;
+        var options = {
+            key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+            amount: a.totalAmount,
+            currency: "INR",
+            name: "RideApp",
+            description: "Test Transaction",
+            // image: `${image}`,
+            order_id: orderId,
+            callback_url: "http://localhost:3000/api/razorpay",
+            prefill: {
+                name: "User",
+                email: "user@example.com",
+                contact: "9999999999",
+            },
+            notes: {
+                address: "Razorpay Corporate Office",
+            },
+            theme: {
+                color: "#3399cc",
+            },
+        };
+
+        const rzp1 = new window.Razorpay(options);
+        rzp1.open();
+    };
 
     return (
         <>
@@ -60,17 +104,15 @@ export default function RideCompletion() {
                         <div className="px-6 pb-8 -mt-12 relative flex flex-col items-center">
                             {/* Driver Avatar */}
                             <div className="relative mb-4">
-                                <div className="size-24 rounded-full border-4 border-white dark:border-[#1e293b] bg-cover bg-center shadow-lg"
-                                    data-alt="Portrait of the driver smiling"
-                                    style={{ backgroundImage: 'url("https://lh3.googleusercontent.com/aida-public/AB6AXuDpwQDZQZI9EK5aQVt2uJf8OwY59BkHLfpRwByHT_kRBKvIe92OgL5lNBeywHj2mPB-svtBcsTEgYk-yZEWbvSxh0UQAaBAx-EHwfykYhxNfZoYYs0BviMcI1NuOwXW-sbIog0YkMSVUUCm_sAzdF2NisEkd6TYzWxN0w6laCXWZa3Amis6gDK-NH-FRn7pRIh_qk1Cu2HNIiSv8KG3TLhrkuoaUaD11fE4CBkrMqNdeouwmSi7sqR8T2I2E6c5Z2fusO1nVUGW4WPA")' }}>
-                                </div>
+                                <img className="size-24 rounded-full border-4 border-white dark:border-[#1e293b] bg-cover bg-center shadow-lg" src={image} alt='image'>
+                                </img>
                                 <div className="absolute bottom-0 right-0 bg-white dark:bg-gray-800 rounded-full p-1 shadow-md border border-gray-100 dark:border-gray-700">
                                     <span className="material-symbols-outlined text-yellow-400 text-sm">star</span>
                                 </div>
                             </div>
                             {/* Titles */}
                             <h1 className="text-2xl font-display font-bold text-gray-900 dark:text-white text-center mb-1">You've arrived! 🎉</h1>
-                            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-6 text-center">How was your ride with David?</p>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium mb-6 text-center">How was your ride with {name}?</p>
                             {/* Rating Stars */}
                             <div className="flex gap-3 mb-8 group">
                                 <button className="transition-transform hover:scale-110 focus:outline-none">
@@ -123,35 +165,65 @@ export default function RideCompletion() {
                             <div className="w-full mb-6">
                                 <div className="flex items-center justify-between mb-4">
                                     <span className="text-sm font-bold text-gray-900 dark:text-white">Add a tip</span>
-                                    <span className="text-xs text-gray-500">100% goes to David</span>
+                                    <span className="text-xs text-gray-500">100% goes to {name}</span>
                                 </div>
                                 <div className="grid grid-cols-4 gap-3">
-                                    <button className="h-12 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-[#2b9dee] hover:bg-[#2b9dee]/5 hover:text-[#2b9dee] transition-all font-bold text-gray-700 dark:text-gray-300 text-sm">₹1</button>
-                                    <button className="h-12 rounded-xl bg-[#2b9dee] text-white shadow-lg shadow-blue-500/30 font-bold text-sm border border-[#2b9dee]">₹3</button>
-                                    <button className="h-12 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-[#2b9dee] hover:bg-[#2b9dee]/5 hover:text-[#2b9dee] transition-all font-bold text-gray-700 dark:text-gray-300 text-sm">₹5</button>
-                                    <button className="h-12 rounded-xl border border-gray-200 dark:border-gray-600 hover:border-[#2b9dee] hover:bg-[#2b9dee]/5 hover:text-[#2b9dee] transition-all font-bold text-gray-700 dark:text-gray-300 text-sm">Custom</button>
+                                    {[1, 3, 5].map((amount) => (
+                                        <button
+                                            key={amount}
+                                            onClick={() => { setTip(amount), setCustom(false) }}
+                                            className={`h-12 rounded-xl font-bold text-sm transition-all border
+                                                    ${tip === amount ? 'bg-[#2b9dee] text-white shadow-lg shadow-blue-500/30 border-[#2b9dee]'
+                                                    : 'border-gray-200 dark:border-gray-600 hover:border-[#2b9dee] hover:bg-[#2b9dee]/5 hover:text-[#2b9dee] text-gray-700 dark:text-gray-300'
+                                                }`}>
+                                            ₹{amount}
+                                        </button>
+                                    ))}
+
+                                    <button onClick={() => handleCustom()} className={`h-12 rounded-xl font-bold text-sm transition-all border
+                                                    ${custom ? 'bg-[#2b9dee] text-white shadow-lg shadow-blue-500/30 border-[#2b9dee]'
+                                            : 'border-gray-200 dark:border-gray-600 hover:border-[#2b9dee] hover:bg-[#2b9dee]/5 hover:text-[#2b9dee] text-gray-700 dark:text-gray-300'
+                                        }`}>
+                                        Custom
+                                    </button>
                                 </div>
+                                {custom && (
+                                    <div className='grid grid-cols-2 gap-3 pt-3'>
+                                        <input
+                                            className="h-12 rounded-xl border dark:border-gray-600 border-[#2b9dee] bg-[#2b9dee]/5 text-[#2b9dee] transition-all font-bold dark:text-gray-300 text-sm p-2 outline-0 appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                            type="Number"
+                                            placeholder='Enter Amount'
+                                            min="0"
+                                            value={input}
+                                            onChange={(e) => setInput(e.target.value)}
+                                        />
+
+                                        <button onClick={() => setTip(Number.parseInt(input))} className="h-12 rounded-xl border dark:border-gray-600 border-[#2b9dee] bg-[#2b9dee]/5 text-[#2b9dee] transition-all font-bold dark:text-gray-300 text-sm">
+                                            Add
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                             {/* Fare Summary */}
                             <div className="w-full bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-4 mb-8">
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-sm text-gray-500 dark:text-gray-400">Ride Fare</span>
-                                    <span className="text-sm font-medium text-gray-900 dark:text-white">₹21.50</span>
+                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{formatInr(fareAmount)}</span>
                                 </div>
                                 <div className="flex justify-between items-center mb-3">
                                     <span className="text-sm text-gray-500 dark:text-gray-400">Tip</span>
-                                    <span className="text-sm font-medium text-green-600">+₹3.00</span>
+                                    <span className="text-sm font-medium text-green-600">+{formatInr(tip)}</span>
                                 </div>
                                 <div className="w-full h-px bg-gray-200 dark:bg-gray-700 mb-3"></div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-base font-bold text-gray-900 dark:text-white">Total</span>
-                                    <span className="text-lg font-bold text-gray-900 dark:text-white">₹24.50</span>
+                                    <span className="text-lg font-bold text-gray-900 dark:text-white">{formatInr(computedTotal)}</span>
                                 </div>
                             </div>
                             {/* Actions */}
                             <div className="w-full flex flex-col gap-3">
-                                <button className="w-full h-12 bg-[#2b9dee] hover:bg-blue-500 text-white font-bold rounded-full shadow-lg shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-2">
-                                    <span>Submit Rating</span>
+                                <button onClick={() => openRazorpay(tip)} className="w-full h-12 bg-[#2b9dee] hover:bg-blue-500 text-white font-bold rounded-full shadow-lg shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-2">
+                                    <span>Pay</span>
                                     <span className="material-symbols-outlined text-sm">arrow_forward</span>
                                 </button>
                                 <button className="w-full h-10 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 font-semibold text-sm rounded-full transition-colors">

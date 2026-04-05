@@ -144,4 +144,11 @@ rideStatus.on("connection", (socket) => {
         rideStatus.to(rideId).emit("status", normalizedStatus);
 
     })
+
+    socket.on("captainLocation", (location) => {
+        const { longitude, latitude } = location;
+        console.log("Live location:", longitude, latitude);
+
+        rideStatus.emit("riderLocation", location)
+    })
 });
