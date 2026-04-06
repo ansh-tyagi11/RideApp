@@ -7,6 +7,8 @@ import CancelRideButton from './CancelRideButton';
 import { useRideId } from '@/hooks/rideId';
 import { useQuery } from '@tanstack/react-query';
 import socket from '@/lib/socket';
+import Maps from './maps';
+import userMap from './userMap';
 
 const rideSteps = ['accepted', 'arriving', 'ongoing', 'completed'];
 
@@ -17,6 +19,8 @@ export default function DuringRide() {
   const rideId = useRideId();
   const [stepIdx, setStepIdx] = useState(0);
   const stepKey = rideSteps[stepIdx];
+  const [lng, setLng] = useState(null);
+  const [lat, setLat] = useState(null);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["captain-info", rideId],
@@ -86,6 +90,8 @@ export default function DuringRide() {
     socket.on("status", handleStatus);
 
     socket.on("riderLocation", (location) => {
+      setLat(latitude)
+      setLng(longitude)
       console.log(location)
     })
 
@@ -128,59 +134,10 @@ export default function DuringRide() {
 
       {/* Left Panel: Map & Floating UI */}
       <main className="flex-1 relative bg-gray-100 md:h-full w-full md:pt-0">
-        {/* Map Background */}
-        <div
-          className="absolute inset-0 w-full h-full bg-cover bg-center opacity-90"
-          style={{
-            backgroundImage:
-              'url("https://lh3.googleusercontent.com/aida-public/AB6AXuD2WNcjeOBkQGWbDQz26fF_3qQb7ughAU1o6L4FW0O_YIaD_36p53RKtYdDnWPx16F-xPJmo2FMBTs7HR42qth7X9umD8oVdk_8s3Td4ZIzYw4MlqdF_d67OE0MLj9ZTZphh9eTqRji45HI8yqkVkbiHM0qlaD0--Pn4fer-0L6Ny1BQtYhB-ibqSEZxMqBHlw_z6IN8YJB5uuCmzJuUy6B90yons0WS6OLqhaSSWw8Y2CU1QOrUEBkCSQzd9Xhmesxv1ez-xNghUi2")',
-          }}
-        />
-
-        {/* SVG Route Overlay (Decorative Simulation) */}
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {/* Simulated path */}
-          <path
-            className="drop-shadow-lg opacity-90"
-            d="M 200 800 Q 400 600 500 500 T 800 300"
-            fill="none"
-            stroke="#2b9dee"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="6"
-          />
-          <path
-            className="opacity-60"
-            d="M 800 300 L 900 250"
-            fill="none"
-            stroke="#94a3b8"
-            strokeDasharray="10, 10"
-            strokeLinecap="round"
-            strokeWidth="6"
-          />
-          {/* Car Icon Marker moving on map */}
-          <g transform="translate(500, 500)">
-            <circle
-              className="pulse-ring"
-              cx="0"
-              cy="0"
-              fill="#2b9dee"
-              fillOpacity="0.2"
-              r="40"
-            />
-            <circle
-              cx="0"
-              cy="0"
-              fill="#fff"
-              r="16"
-              stroke="#2b9dee"
-              strokeWidth="3"
-            />
-          </g>
-        </svg>
+        <div className="absolute inset-0 w-50 h-full bg-cover bg-center opacity-90">
+          {/* <Maps /> */}
+          <userMap lat={lat} lng={lng}/>
+        </div>
 
         {/* Floating Top Banner */}
         <div className="pt-20 md:pt-0 absolute top-6 left-1/2 -translate-x-1/2 w-[90%] md:w-auto z-10">
@@ -201,30 +158,6 @@ export default function DuringRide() {
                 )}
               </p>
             </div>
-          </div>
-        </div>
-
-        {/* Floating Map Controls */}
-        <div className="absolute bottom-8 right-8 flex flex-col gap-3 z-10">
-          <button className="bg-white dark:bg-[#1A2632] hover:bg-gray-50 text-[#111518] dark:text-white w-12 h-12 rounded-full shadow-lg flex items-center justify-center transition-transform active:scale-95">
-            <span className="material-symbols-outlined">my_location</span>
-          </button>
-          <div className="flex flex-col bg-white dark:bg-[#1A2632] rounded-full shadow-lg overflow-hidden">
-            <button className="w-12 h-12 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-[#23303C] border-b border-gray-100 dark:border-[#2f3e4c]">
-              <span className="material-symbols-outlined">add</span>
-            </button>
-            <button className="w-12 h-12 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-[#23303C]">
-              <span className="material-symbols-outlined">remove</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Map Marker: Start Point */}
-        <div className="absolute top-75 left-200 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-0">
-          <div className="w-8 h-8 bg-white rounded-full shadow-md flex items-center justify-center border-2 border-[#111518]">
-            <span className="material-symbols-outlined text-sm font-bold">
-              location_on
-            </span>
           </div>
         </div>
       </main>
