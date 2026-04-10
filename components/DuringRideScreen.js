@@ -20,8 +20,6 @@ export default function DuringRide() {
   const stepKey = rideSteps[stepIdx];
   const [lng, setLng] = useState(null);
   const [lat, setLat] = useState(null);
-  const [pickupCoords, setPickupCoords] = useState(null);
-  const [dropCoords, setDropCoords] = useState(null);
 
   const { data, isLoading, isError, refetch } = useQuery({
     queryKey: ["captain-info", rideId],
@@ -108,40 +106,6 @@ export default function DuringRide() {
 
   const captain = data;
 
-  const geocode = async (address) => {
-    try {
-      const res = await fetch(
-        `https://atlas.mappls.com/api/places/geocode?address=${encodeURIComponent(address)}&access_token=${process.env.NEXT_PUBLIC_MAPPLS_API_KEY}`
-      );
-      const data = await res.json();
-      console.log("Geocode response:", data);
-      const result = data?.copResults?.[0];
-      if (!result) return null;
-      return {
-        lat: parseFloat(result.latitude),
-        lng: parseFloat(result.longitude),
-      };
-    } catch (err) {
-      console.error("Geocode failed:", err);
-      return null;
-    }
-  };
-
-  useEffect(() => {
-    if (!captain?.pickupLocation || !captain?.dropLocation) return;
-
-    const fetchCoords = async () => {
-      const [pickup, drop] = await Promise.all([
-        geocode(captain.pickupLocation),
-        geocode(captain.dropLocation),
-      ]);
-      setPickupCoords(pickup);
-      setDropCoords(drop);
-    };
-
-    fetchCoords();
-  }, [captain]);
-
   const handleChange = () => {
     setIsActive(!isActive)
   }
@@ -172,13 +136,12 @@ export default function DuringRide() {
       <main className="flex-1 relative bg-gray-100 md:h-full w-full md:pt-0">
         <div className="absolute inset-0 w-50 h-full bg-cover bg-center opacity-90">
           {/* <Maps /> */}
-          {/* {lat && lng && <UsersMap lat={lat} lng={lng} />} */}
           {lat && lng && (
             <UsersMap
               lat={lat}
               lng={lng}
-              pickupLocation={pickupCoords}
-              dropLocation={dropCoords}
+              pickupAddress={captain?.pickupLocation}
+              dropAddress={captain?.dropLocation}
             />
           )}
         </div>
