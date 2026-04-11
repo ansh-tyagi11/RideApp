@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import useCaptain from '@/hooks/useCaptain';
 import { forAllCaptainRides } from '@/actions/useractions';
 import { useInfiniteQuery } from '@tanstack/react-query';
@@ -42,7 +42,15 @@ const Page = () => {
         enabled: !!captain?.email
     });
 
-    const rides = data?.pages?.flatMap((page) => page.rides) ?? [];
+    const rides = useMemo(() => {
+        const flat = data?.pages?.flatMap((page) => page.rides) ?? [];
+        const seen = new Set();
+        return flat.filter((ride) => {
+            if (seen.has(ride._id)) return false;
+            seen.add(ride._id);
+            return true;
+        });
+    }, [data]);
 
     useEffect(() => {
         const el = loadMoreRef.current;

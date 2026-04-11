@@ -318,7 +318,58 @@ export async function forAllCaptainRides(email, status = "all", page = 1, limit 
 
     let skip = (page - 1) * limit;
 
-    let rides = await Rides.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean();
+    let rides = await Rides.aggregate([
+        { $match: query },
+        { $sort: { createdAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+        {
+            $lookup: {
+                from: "payments",
+                let: { rideId: "$_id" },
+                pipeline: [{
+                    $match: { $expr: { $eq: ["$rideId", "$$rideId"] } }
+                }, {
+                    $project: {
+                        tip: 1,
+                        totalAmount: 1,
+                        paymentProvider: 1,
+                        platformFee: 1,
+                        captainEarning: 1,
+                        refundStatus: 1
+                    }
+                }
+                ],
+                as: "Payment"
+
+            }
+        }, {
+            $unwind: {
+                path: "$Payment",
+                preserveNullAndEmptyArrays: true
+            }
+        }, {
+            $project: {
+                _id: 1,
+                pickupLocation: 1,
+                dropLocation: 1,
+                pickupTime: 1,
+                dropTime:1,
+                createdAt: 1,
+                amount: 1,
+                status: 1,
+                distance: 1,
+                duration: 1,
+                tip: "$Payment.tip",
+                totalAmount: "$Payment.totalAmount",
+                paymentProvider: "$Payment.paymentProvider",
+                platformFee: "$Payment.platformFee",
+                captainEarning: "$Payment.captainEarnings",
+                refundStatus: "$Payment.refundStatus"
+            }
+        }
+
+    ])
 
     const total = await Rides.countDocuments(query);
 
