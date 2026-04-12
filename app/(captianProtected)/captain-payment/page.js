@@ -137,7 +137,7 @@ const Page = () => {
                                                     </div>
                                                     <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-6">
                                                         <div className="text-left sm:text-right">
-                                                            <p className="font-bold text-base">₹{payment.amount}</p>
+                                                            <p className="font-bold text-base">₹{payment.captainEarning}</p>
                                                             {payment.status == "completed" && (<p className="text-[10px] text-green-600 font-bold uppercase tracking-tight">
                                                                 {payment.status}
                                                             </p>)}
@@ -153,23 +153,23 @@ const Page = () => {
                                                     <div className="space-y-2 text-xs sm:text-sm">
                                                         <div className="flex justify-between">
                                                             <span className="text-[#4c739a]">Base Fare</span>
-                                                            <span className="font-medium">₹3.00</span>
+                                                            <span className="font-medium">₹{payment.amount}</span>
                                                         </div>
                                                         <div className="flex justify-between">
-                                                            <span className="text-[#4c739a]">Distance ({payment?.distance ? Math.floor(payment.distance) : 0}KM)</span>
-                                                            <span className="font-medium">₹8.50</span>
+                                                            <span className="text-[#4c739a]">Tip</span>
+                                                            <span className="font-medium">₹{payment.tip}</span>
                                                         </div>
                                                         <div className="flex justify-between text-orange-600">
-                                                            <span className="font-medium">Surge Pricing (1.4x)</span>
-                                                            <span className="font-bold">+₹4.00</span>
+                                                            <span className="font-medium">Surge Pricing (1.2x)</span>
+                                                            <span className="font-bold">+₹0.00</span>
                                                         </div>
                                                         <div className="flex justify-between text-slate-400">
-                                                            <span>Service Fee</span>
-                                                            <span>-₹1.30</span>
+                                                            <span>Platform Fee</span>
+                                                            <span>-₹{payment.platformFee}</span>
                                                         </div>
                                                         <div className="pt-2 mt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between font-bold text-[#0d141b] dark:text-white">
                                                             <span>Net Earnings</span>
-                                                            <span>₹{payment.amount}</span>
+                                                            <span>₹{payment.captainEarning}</span>
                                                         </div>
                                                     </div>
                                                 </div>

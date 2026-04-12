@@ -354,7 +354,7 @@ export async function forAllCaptainRides(email, status = "all", page = 1, limit 
                 pickupLocation: 1,
                 dropLocation: 1,
                 pickupTime: 1,
-                dropTime:1,
+                dropTime: 1,
                 createdAt: 1,
                 amount: 1,
                 status: 1,
@@ -364,7 +364,7 @@ export async function forAllCaptainRides(email, status = "all", page = 1, limit 
                 totalAmount: "$Payment.totalAmount",
                 paymentProvider: "$Payment.paymentProvider",
                 platformFee: "$Payment.platformFee",
-                captainEarning: "$Payment.captainEarnings",
+                captainEarning: "$Payment.captainEarning",
                 refundStatus: "$Payment.refundStatus"
             }
         }
@@ -556,7 +556,6 @@ export async function forAllCaptainPayment(email, filter = "All", page = 1, limi
                     $project: {
                         pickupLocation: 1,
                         dropLocation: 1,
-                        distance: 1,
                     },
                 }
                 ],
@@ -600,7 +599,9 @@ export async function forAllCaptainPayment(email, filter = "All", page = 1, limi
                 status: 1,
                 createdAt: 1,
                 transactionId: 1,
-                distance: "$ride.distance",
+                captainEarning: 1,
+                tip: 1,
+                platformFee: 1,
                 captainUsername: {
                     $ifNull: ["$user.username", "$user.name"]
                 },
@@ -754,8 +755,8 @@ export async function initiate(rideId, tip) {
 
     let paymentOptions = await instance.orders.create(options);
 
-    let platformFee = amount * (20 / 100);
-    let captainEarning = amount - platformFee + safeTip;
+    let platformFee = Math.ceil(amount * (20 / 100));
+    let captainEarning = Math.floor(amount - platformFee + safeTip);
 
     await Payment.create({
         rideId: _id,

@@ -253,7 +253,7 @@ const Page = () => {
                                                                 {ride.status === "cancelled" && "Fee"}
                                                                 {ride.status !== "completed" && ride.status !== "cancelled" && "Est. Fare"}
                                                             </p>
-                                                            <p className="text-2xl font-black text-slate-900 dark:text-white">₹{ride.amount}</p>
+                                                            <p className="text-2xl font-black text-slate-900 dark:text-white">₹{ride.captainEarning}</p>
                                                         </div>
                                                     </div>
 
@@ -341,7 +341,7 @@ const Page = () => {
                                                                     <p className="text-xs uppercase text-[#4c739a] dark:text-slate-500 font-bold tracking-wider">Payment</p>
                                                                     <div className="flex items-center gap-1.5 text-[#137fec]">
                                                                         <span className="material-symbols-outlined text-[18px]">credit_card</span>
-                                                                        <span className="text-sm font-bold">Credit Card</span>
+                                                                        <span className="text-sm font-bold uppercase">{ride.paymentProvider}</span>
                                                                     </div>
                                                                 </div>
                                                             </div>
@@ -389,25 +389,25 @@ const Page = () => {
                                                             <div className="space-y-4">
                                                                 <div className="flex justify-between items-center text-sm">
                                                                     <span className="text-[#4c739a] dark:text-slate-400">Base Fare</span>
-                                                                    <span className="font-medium text-[#0d141b] dark:text-slate-200">₹12.00</span>
+                                                                    <span className="font-medium text-[#0d141b] dark:text-slate-200">₹{ride.amount}</span>
                                                                 </div>
                                                                 <div className="flex justify-between items-center text-sm">
                                                                     <span className="text-[#4c739a] dark:text-slate-400">Peak Surge (1.2x)</span>
-                                                                    <span className="font-medium text-[#137fec]">+₹3.50</span>
+                                                                    <span className="font-medium text-[#137fec]">+₹0.00</span>
+                                                                </div>
+                                                                <div className="flex justify-between items-center text-sm">
+                                                                    <span className="text-[#4c739a] dark:text-slate-400">Platform Service Fee (20%)</span>
+                                                                    <span className="font-medium text-red-500">-₹{ride.platformFee}</span>
                                                                 </div>
                                                                 <div className="flex justify-between items-center text-sm">
                                                                     <span className="text-[#4c739a] dark:text-slate-400">Passenger Tip</span>
-                                                                    <span className="font-medium text-emerald-600 dark:text-emerald-400">+₹2.00</span>
-                                                                </div>
-                                                                <div className="flex justify-between items-center text-sm">
-                                                                    <span className="text-[#4c739a] dark:text-slate-400">Platform Service Fee (10%)</span>
-                                                                    <span className="font-medium text-red-500">-₹1.50</span>
+                                                                    <span className="font-medium text-emerald-600 dark:text-emerald-400">+₹{ride.tip}</span>
                                                                 </div>
                                                                 <div className="pt-4 border-t border-slate-200 dark:border-slate-800 mt-4">
                                                                     <div className="flex justify-between items-end">
                                                                         <div>
                                                                             <p className="text-xs font-bold text-[#137fec] uppercase mb-1">Net Earnings</p>
-                                                                            <p className="text-3xl font-black text-[#0d141b] dark:text-white">₹{ride.amount}</p>
+                                                                            <p className="text-3xl font-black text-[#0d141b] dark:text-white">₹{ride.captainEarning}</p>
                                                                         </div>
                                                                         <div className="flex items-center gap-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-3 py-1 rounded-full text-xs font-bold">
                                                                             <span className="material-symbols-outlined text-[14px]">check_circle</span>
