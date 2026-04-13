@@ -210,7 +210,7 @@ const page = () => {
                                                             <div className="text-xs font-semibold text-slate-500 dark:text-slate-400">Drop :{item.dropLocation}</div>
                                                         </div>
                                                         <div>
-                                                            <div className="text-sm font-semibold uppercase">{item.status} • {fmtDate(item.createdAt)} • ₹{item.amount}</div>
+                                                            <div className="text-sm font-semibold uppercase">{item.status} • {fmtDate(item.createdAt)} • &#8377;{item.amount}</div>
                                                             <div className="text-sm font-semibold">Transaction ID:{item.transactionId}</div>
                                                         </div>
                                                     </li>

@@ -176,7 +176,7 @@ export default function RideCompletion() {
                                                     ${tip === amount ? 'bg-[#2b9dee] text-white shadow-lg shadow-blue-500/30 border-[#2b9dee]'
                                                     : 'border-gray-200 dark:border-gray-600 hover:border-[#2b9dee] hover:bg-[#2b9dee]/5 hover:text-[#2b9dee] text-gray-700 dark:text-gray-300'
                                                 }`}>
-                                            ₹{amount}
+                                            &#8377;{amount}
                                         </button>
                                     ))}
 

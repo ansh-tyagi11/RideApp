@@ -147,7 +147,7 @@ const page = () => {
                                                         <div className="text-sm font-semibold">Drop: {item.dropLocation}</div>
                                                     </div>
                                                     <div className="text-xs text-slate-500 dark:text-slate-400 uppercase">
-                                                        {item.status} • {new Date(item.createdAt).toLocaleDateString([], { month: "short", year: "numeric", day: "2-digit" })} • ₹{item.amount}
+                                                        {item.status} • {new Date(item.createdAt).toLocaleDateString([], { month: "short", year: "numeric", day: "2-digit" })} • &#8377;{item.amount}
                                                     </div>
                                                 </li>
                                             ))
@@ -204,7 +204,7 @@ const page = () => {
 
                                                 <span className="text-sm text-gray-400 font-medium">Standard • Toyota Camry</span>
                                             </div>
-                                            <p className={`text-lg font-bold dark:text-white ${ride.status === "cancelled" ? "text-gray-400 line-through" : "text-[#111318]"}`}>₹{ride.amount}</p>
+                                            <p className={`text-lg font-bold dark:text-white ${ride.status === "cancelled" ? "text-gray-400 line-through" : "text-[#111318]"}`}>&#8377;{ride.amount}</p>
                                         </div>
                                         <div className="relative pl-4 border-l-2 border-dashed border-gray-200 dark:border-gray-600 ml-2 space-y-6">
                                             <div className="relative">

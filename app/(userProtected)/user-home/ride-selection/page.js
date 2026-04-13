@@ -178,7 +178,7 @@ const RideSelection = () => {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[#111518] dark:text-white text-lg font-bold">₹{pricing?.Micro ?? "Calculating..."}</p>
+                                            <p className="text-[#111518] dark:text-white text-lg font-bold">&#8377;{pricing?.Micro ?? "Calculating..."}</p>
                                         </div>
                                     </div>
                                     {/* Option 2: Sedan (Selected) */}
@@ -200,7 +200,7 @@ const RideSelection = () => {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[#111518] dark:text-white text-lg font-bold">₹{pricing?.Sedan ?? "Calculating..."}</p>
+                                            <p className="text-[#111518] dark:text-white text-lg font-bold">&#8377;{pricing?.Sedan ?? "Calculating..."}</p>
                                         </div>
                                     </div>
                                     {/* Option 3: SUV */}
@@ -219,7 +219,7 @@ const RideSelection = () => {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-[#111518] dark:text-white text-lg font-bold">₹{pricing?.SUV ?? "Calculating..."}</p>
+                                            <p className="text-[#111518] dark:text-white text-lg font-bold">&#8377;{pricing?.SUV ?? "Calculating..."}</p>
                                         </div>
                                     </div>
                                 </div>

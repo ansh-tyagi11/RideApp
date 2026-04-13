@@ -60,9 +60,14 @@ const Page = () => {
             .filter((p) => p?.status === "completed")
             .reduce((s, p) => s + (p.amount ?? 0), 0);
     }, [payments]);
+
     const totalRides = useMemo(() => {
         return payments.filter((p) => p?.status === "completed").length;
-    }, [payments])
+    }, [payments]);
+
+    const avgEarn = useMemo(() => {
+        return totalRides > 0 ? totalEarn / totalRides : 0;
+    }, [totalEarn, totalRides]);
 
     return (
         <>
@@ -78,15 +83,17 @@ const Page = () => {
                                 {/* Segmented Buttons Filter */}
                                 <div className="flex flex-wrap bg-slate-100 dark:bg-slate-800 p-1 rounded-xl gap-1">
                                     {["All", "Today", "This Week", "This Month"].map((f, i) => (
-                                        <div
+                                        <button
+                                            type="button"
                                             key={i}
                                             onClick={() => setActiveFilter(f)}
-                                            className={`px-3 sm:px-4 py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg cursor-pointer transition-all ${activeFilter === f
+                                            aria-pressed={activeFilter === f}
+                                            className={`px-3 sm:px-4 py-1.5 text-[11px] sm:text-xs font-semibold rounded-lg transition-all ${activeFilter === f
                                                 ? "bg-white text-[#137fec] shadow-sm dark:bg-slate-700 dark:text-white"
                                                 : "text-slate-500"
                                                 }`}>
                                             {f}
-                                        </div>
+                                        </button>
                                     ))}
                                 </div>
                             </header>
@@ -95,7 +102,7 @@ const Page = () => {
                                 <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 relative z-10">
                                     <div>
                                         <p className="text-[#4c739a] font-medium text-xs sm:text-sm mb-1 uppercase tracking-wider">{activeFilter} Earnings</p>
-                                        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#0d141b] dark:text-white tracking-tight">₹{totalEarn} </h2>
+                                        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#0d141b] dark:text-white tracking-tight">&#8377;{totalEarn} </h2>
                                         <p className="text-[#4c739a] mt-2 flex items-center gap-2 text-xs sm:text-sm">
                                             <span className="material-symbols-outlined text-green-500 text-lg">check_circle</span>
                                             {totalRides} Trips Completed
@@ -112,6 +119,21 @@ const Page = () => {
                                 <div className="absolute top-0 right-0 w-64 h-full bg-linear-to-l from-[#137fec]/5 to-transparent pointer-events-none">
                                 </div>
                             </section>
+                            {/* Quick Stats */}
+                            <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                <div className="bg-white dark:bg-[#1a2632] rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+                                    <p className="text-xs text-[#4c739a] uppercase tracking-wider">Avg Per Trip</p>
+                                    <p className="text-xl font-bold text-[#0d141b] dark:text-white">&#8377;{avgEarn.toFixed(2)}</p>
+                                </div>
+                                <div className="bg-white dark:bg-[#1a2632] rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+                                    <p className="text-xs text-[#4c739a] uppercase tracking-wider">Completed Trips</p>
+                                    <p className="text-xl font-bold text-[#0d141b] dark:text-white">{totalRides}</p>
+                                </div>
+                                <div className="bg-white dark:bg-[#1a2632] rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm">
+                                    <p className="text-xs text-[#4c739a] uppercase tracking-wider">Total Earnings</p>
+                                    <p className="text-xl font-bold text-[#0d141b] dark:text-white">&#8377;{totalEarn}</p>
+                                </div>
+                            </section>
                             {/* Trip History Section */}
                             <section className="space-y-4 pb-12">
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -123,7 +145,18 @@ const Page = () => {
                                     payments.map((payment) => {
                                         return (
                                             <div key={payment._listKey} className="bg-white dark:bg-[#1a2632] rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                                                <div className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                <div
+                                                    role="button"
+                                                    tabIndex={0}
+                                                    onClick={() => handleExpand(payment._id)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter" || e.key === " ") {
+                                                            e.preventDefault();
+                                                            handleExpand(payment._id);
+                                                        }
+                                                    }}
+                                                    className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                                                >
                                                     <div className="flex items-start sm:items-center gap-4">
                                                         <div className="bg-slate-100 dark:bg-slate-800 p-2 rounded-lg text-slate-500">
                                                             <span className="material-symbols-outlined">schedule</span>
@@ -137,7 +170,7 @@ const Page = () => {
                                                     </div>
                                                     <div className="flex items-center justify-between sm:justify-end gap-4 sm:gap-6">
                                                         <div className="text-left sm:text-right">
-                                                            <p className="font-bold text-base">₹{payment.captainEarning}</p>
+                                                            <p className="font-bold text-base">&#8377;{payment.captainEarning}</p>
                                                             {payment.status == "completed" && (<p className="text-[10px] text-green-600 font-bold uppercase tracking-tight">
                                                                 {payment.status}
                                                             </p>)}
@@ -145,7 +178,17 @@ const Page = () => {
                                                                 {payment.status}
                                                             </p>)}
                                                         </div>
-                                                        <span onClick={() => handleExpand(payment._id)} className={`material-symbols-outlined text-slate-400 transition-transform ${isActive === payment._id ? "rotate-180" : "rotate-0"}`}>expand_more</span>
+                                                        <button
+                                                            type="button"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleExpand(payment._id);
+                                                            }}
+                                                            aria-label="Toggle trip breakdown"
+                                                            className={`material-symbols-outlined text-slate-400 transition-transform ${isActive === payment._id ? "rotate-180" : "rotate-0"}`}
+                                                        >
+                                                            expand_more
+                                                        </button>
                                                     </div>
                                                 </div>
                                                 {/* Breakdown Panel */}
@@ -153,23 +196,23 @@ const Page = () => {
                                                     <div className="space-y-2 text-xs sm:text-sm">
                                                         <div className="flex justify-between">
                                                             <span className="text-[#4c739a]">Base Fare</span>
-                                                            <span className="font-medium">₹{payment.amount}</span>
+                                                            <span className="font-medium">&#8377;{payment.amount}</span>
                                                         </div>
                                                         <div className="flex justify-between">
                                                             <span className="text-[#4c739a]">Tip</span>
-                                                            <span className="font-medium">₹{payment.tip}</span>
+                                                            <span className="font-medium">&#8377;{payment.tip}</span>
                                                         </div>
                                                         <div className="flex justify-between text-orange-600">
                                                             <span className="font-medium">Surge Pricing (1.2x)</span>
-                                                            <span className="font-bold">+₹0.00</span>
+                                                            <span className="font-bold">+&#8377;0.00</span>
                                                         </div>
                                                         <div className="flex justify-between text-slate-400">
                                                             <span>Platform Fee</span>
-                                                            <span>-₹{payment.platformFee}</span>
+                                                            <span>-&#8377;{payment.platformFee}</span>
                                                         </div>
                                                         <div className="pt-2 mt-2 border-t border-slate-200 dark:border-slate-700 flex justify-between font-bold text-[#0d141b] dark:text-white">
                                                             <span>Net Earnings</span>
-                                                            <span>₹{payment.captainEarning}</span>
+                                                            <span>&#8377;{payment.captainEarning}</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -180,7 +223,13 @@ const Page = () => {
 
                                 )
                                     :
-                                    (<div className="px-4 py-2 text-slate-400 dark:text-slate-500 text-sm">No Payment found</div>)
+                                    (
+                                        <div className="bg-white dark:bg-[#1a2632] rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6 text-center text-slate-500">
+                                            <span className="material-symbols-outlined text-3xl text-slate-300">payments</span>
+                                            <p className="mt-2 text-sm font-medium">No payments found for this filter.</p>
+                                            <p className="text-xs text-slate-400">Try changing the time range above.</p>
+                                        </div>
+                                    )
                                 }
 
                                 <div ref={loadMoreRef} className="mt-8 flex flex-col items-center gap-3 py-6">
@@ -206,3 +255,4 @@ const Page = () => {
 }
 
 export default Page
+

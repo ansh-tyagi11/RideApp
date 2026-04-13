@@ -190,7 +190,7 @@ export default function CaptainSearchingPage() {
                                         <p className="text-xs text-slate-500 dark:text-slate-400">Personal</p>
                                     </div>
                                 </div>
-                                <p className="text-base font-bold text-[#111518] dark:text-white">₹ {amount}</p>
+                                <p className="text-base font-bold text-[#111518] dark:text-white">&#8377; {amount}</p>
                             </div>
                         </div>
 

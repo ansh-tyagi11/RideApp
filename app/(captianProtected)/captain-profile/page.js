@@ -40,10 +40,13 @@ const page = () => {
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email: user.email, data })
         });
-        if (res.ok) {
-            toast.success(res.message || "Profile updated successfully.");
+
+        let responseData = await res.json();
+
+        if (responseData.success) {
+            toast.success(responseData.message || "Profile updated successfully.");
         } else {
-            toast.error(res.error || res.message || "Failed to update profile.");
+            toast.error(responseData.error || responseData.message || "Failed to update profile.");
         }
         reset();
     }

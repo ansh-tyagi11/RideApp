@@ -29,10 +29,13 @@ export default function UserProfileSettings() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ email: user.email, data })
     });
-    if (res.ok) {
-      toast.success("Profile updated successfully!");
+
+    let responseData = await res.json();
+
+    if (responseData.success) {
+      toast.success(responseData.message);
     } else {
-      toast.error(res.error || "An error occurred while updating the profile.");
+      toast.error(responseData.error || "An error occurred while updating the profile.");
     }
     reset()
   }

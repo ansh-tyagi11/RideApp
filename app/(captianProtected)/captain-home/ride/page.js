@@ -362,7 +362,7 @@ export default function CaptainDuringRide() {
                                         <span className="text-green-600 dark:text-green-400 font-bold text-base">{isRiderLoading ? (
                                             <span className="block h-4 w-48 rounded-md bg-gray-200 dark:bg-[#2f3e4c] animate-pulse" />
                                         ) : (
-                                            <span>₹{rider?.amount ?? "Amount"}</span>
+                                            <span>&#8377;{rider?.amount ?? "Amount"}</span>
                                         )}</span>
                                     </div>
                                 </div>
