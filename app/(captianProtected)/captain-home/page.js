@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import useCaptain from '@/hooks/useCaptain';
 import { useRouter } from 'next/navigation';
 import { toast } from 'react-toastify';
@@ -8,8 +8,11 @@ import socket from '@/lib/socket';
 const CaptainHomePage = () => {
     const { user: captain } = useCaptain();
     const router = useRouter();
+    const [status, setStatus] = useState("inactive");
 
     useEffect(() => {
+        if (!socket.connected) socket.connect();
+
         const activeRideId = sessionStorage.getItem("activeRideId");
 
         if (activeRideId) {
@@ -32,10 +35,15 @@ const CaptainHomePage = () => {
 
     }, []);
 
+    useEffect(() => {
+        if (captain?.status) setStatus(captain.status);
+    }, [captain?.status]);
+
     const acceptRide = () => {
         if (!captain) return;
+        if (!socket.connected) socket.connect();
 
-        const rideId = "69cbfeee80f9f1abdc03c377";
+        const rideId = "69ef62f23714f027732bea5b";
 
         socket.emit("roomId", rideId);
 
@@ -44,6 +52,30 @@ const CaptainHomePage = () => {
             rideId: rideId
         });
     };
+
+    const updateStatus = async (e) => {
+        if (!captain) return;
+
+        const isChecked = e.target.checked;
+        const newStatus = isChecked ? "active" : "inactive";
+
+        setStatus(newStatus);
+        console.log("New status:", newStatus);
+        try {
+            await fetch("/api/captainProfileUpdate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    email: captain.email,
+                    data: { status: newStatus }
+                })
+            });
+        } catch (error) {
+            console.error("Failed to update captain status:", error);
+            toast.error("Failed to update status.");
+        }
+    };
+
 
     return (
         <>
@@ -61,9 +93,17 @@ const CaptainHomePage = () => {
                                 {/* Status Toggle */}
                                 <div className="flex items-center gap-3 bg-slate-100 dark:bg-slate-800 p-1 rounded-full px-4 py-2 border border-slate-200 dark:border-slate-700">
                                     <span className="text-xs font-bold text-[#4c739a] dark:text-slate-400 uppercase tracking-wider">Online</span>
-                                    <label className="relative flex h-6 w-11 cursor-pointer items-center rounded-full bg-[#22c55e] p-0.5">
-                                        <div className="h-5 w-5 rounded-full bg-white shadow-sm transform translate-x-5"></div>
-                                        <input checked="" className="hidden" type="checkbox" readOnly />
+                                    <label className={`relative flex h-6 w-11 cursor-pointer items-center rounded-full p-0.5 ${status === "active" ? "bg-[#22c55e]" : "bg-gray-400"}`}>
+                                        <div
+                                            className={`h-5 w-5 rounded-full bg-white shadow-sm transform transition ${status === "active" ? "translate-x-5" : "translate-x-0"
+                                                }`}
+                                        ></div>
+                                        <input
+                                            type="checkbox"
+                                            checked={status === "active"}
+                                            onChange={updateStatus}
+                                            className="hidden"
+                                        />
                                     </label>
                                 </div>
                                 {/* Earnings Summary */}
@@ -200,7 +240,7 @@ const CaptainHomePage = () => {
                                         </div>
                                         {/* Action Buttons */}
                                         <div className="flex gap-4 mt-8">
-                                            <button onClick={acceptRide} className="flex-1 bg-[#22c55e] hover:bg-[#22c55e]/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-[#22c55e]/20 transition-all flex items-center justify-center gap-2">
+                                            <button onClick={acceptRide} className="flex-1 bg-[#22c55e] hover:bg-[#22c55e]/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-[#22c55e]/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
                                                 <span className="material-symbols-outlined">check_circle</span>
                                                 Accept Request
                                             </button>

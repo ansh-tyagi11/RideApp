@@ -16,6 +16,8 @@ export default function CaptainSearchingPage() {
     const { user, loading } = useUser();
 
     useEffect(() => {
+        if (!socket.connected) socket.connect();
+
         socket.emit("roomId", rideId);
 
         socket.on("redirect", (rideId) => {

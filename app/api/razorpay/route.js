@@ -10,26 +10,35 @@ export const POST = async (req) => {
     let body = await req.formData();
     body = Object.fromEntries(body);
 
-    let checkOrderId = await Payment({
-        $match: {
-            orderId: body.razorpay_order_id
-        }
-    })
+    const checkOrderId = await Payment.findOne({ orderId: body.razorpay_order_id });
 
     if (!checkOrderId) {
-        return NextResponse.json({ success: false, message: "Order Id not found" })
+        return NextResponse.json({ success: false, message: "Order Id not found" }, { status: 404 });
     }
 
-    let secret = process.env.NEXT_PUBLIC_RAZORPAY_KEY_SECRET
+    const secret = process.env.RAZORPAY_KEY_SECRET || process.env.NEXT_PUBLIC_RAZORPAY_KEY_SECRET;
 
-    let validatePayment = validatePaymentVerification({ "order_id": body.razorpay_order_id, "payment_id": body.razorpay_payment_id }, body.razorpay_signature, secret)
+    const validatePayment = validatePaymentVerification(
+        { order_id: body.razorpay_order_id, payment_id: body.razorpay_payment_id },
+        body.razorpay_signature,
+        secret
+    );
 
     if (validatePayment) {
-        const updatePayment = await Payment.findOneAndUpdate({ orderId: body.razorpay_order_id }, { status: "completed" }, { new: true })
+        const updatedPayment = await Payment.findOneAndUpdate(
+            { orderId: body.razorpay_order_id },
+            { status: "completed", transactionId: body.razorpay_payment_id, paidAt: new Date() },
+            { new: true }
+        );
 
-        return NextResponse.redirect(`http:localhost:3000/user-home/ride-completion?paymentdone=true`)
+        const redirectUrl = new URL('/user-home/ride-completion', req.url);
+        redirectUrl.searchParams.set("paymentdone", "true");
+        redirectUrl.searchParams.set("rideId", String(updatedPayment?.rideId || checkOrderId.rideId));
+        redirectUrl.searchParams.set("paymentId", body.razorpay_payment_id);
+
+        return NextResponse.redirect(redirectUrl);
     }
 
-    return NextResponse.json({ success: false, message: "Payment Verification Failed" })
+    return NextResponse.json({ success: false, message: "Payment Verification Failed" }, { status: 400 });
 
 }

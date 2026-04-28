@@ -3,22 +3,28 @@ import React, { useEffect, useState } from 'react';
 import Script from 'next/script';
 import { useRideId } from '@/hooks/rideId';
 import { initiate, amount } from '@/actions/useractions';
+import { redirect, useSearchParams } from 'next/navigation';
 
 export default function RideCompletion() {
     const rideId = useRideId();
+    const searchParams = useSearchParams();
     const [tip, setTip] = useState(3);
     const [fareAmount, setFareAmount] = useState(null);
     const [custom, setCustom] = useState(false);
     const [input, setInput] = useState(0);
     const [name, setName] = useState(null);
     const [image, setImage] = useState(null);
+    const paymentDone = searchParams.get("paymentdone") === "true";
+    const paymentId = searchParams.get("paymentId");
 
     useEffect(() => {
+        if (!rideId) return;
         fetchAmount()
     }, [rideId])
 
     const fetchAmount = async () => {
         let response = await amount(rideId);
+        if (!response?.success || !response?.data) return;
 
         setFareAmount(response.data.amount);
         setName(response.data.captainUsername)
@@ -76,6 +82,42 @@ export default function RideCompletion() {
         const rzp1 = new window.Razorpay(options);
         rzp1.open();
     };
+
+    const afterPayment = () => {
+        let activeRideId = sessionStorage.getItem("activeRideId");
+        let rideData = sessionStorage.getItem("rideData");
+
+        if (activeRideId) {
+            sessionStorage.removeItem("activeRideId");
+        }
+        if (rideData) {
+            sessionStorage.removeItem("rideData");
+        }
+        redirect('/user-home');
+    }   
+
+    if (paymentDone) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="relative bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg shadow-md" role="alert">
+                    <button onClick={() => afterPayment()} className="absolute right-0 top-0 material-symbols-outlined m-0.5 bg-green-500 hover:bg-green-600 text-white p-1 rounded-full shadow-md transition duration-200">
+                        close
+                    </button>
+                    <div className="flex items-start gap-3">
+                        <span className="material-symbols-outlined text-green-600 mt-0.5">verified</span>
+                        <div>
+                            <p className="font-bold">Payment completed successfully</p>
+                            <p className="text-xs font-medium mt-2">Show this confirmation to your captain for verification.</p>
+                            <p className="text-lg font-bold">Total Amount Paid: {formatInr(computedTotal)}</p>
+                            {paymentId && (
+                                <p className="text-[11px] font-semibold mt-1">Payment ID: {paymentId}</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <>

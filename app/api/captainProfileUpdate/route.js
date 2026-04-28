@@ -7,7 +7,7 @@ export async function POST(req) {
     const { email, data } = await req.json();
     await connectDB();
 
-    const { tel, address, vehicleModel, licencePlateNumber, vehicleColor, seatingCapacity, currentPassword, newPassword } = data;
+    const { tel, address, vehicleModel, licencePlateNumber, vehicleColor, seatingCapacity, currentPassword, newPassword, status } = data;
     
     let user = await User.findOne({ email });
     if (!user) return new Response(JSON.stringify({ success: false, message: "User not found." }));
@@ -22,6 +22,7 @@ export async function POST(req) {
     if (vehicleModel) updateQuery.$set["captain.vehicle.model"] = vehicleModel;
     if (vehicleColor) updateQuery.$set["captain.vehicle.vehicleColor"] = vehicleColor;
     if (seatingCapacity) updateQuery.$set["captain.vehicle.seatingCapacity"] = seatingCapacity;
+    if (status === "active" || status === "inactive") updateQuery.$set["captain.status"] = status;
 
     if (newPassword) {
         let storedPasswordHash = user.signUp?.password;

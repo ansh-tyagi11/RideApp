@@ -36,7 +36,8 @@ export async function GET(req) {
             totalRides: captain.totalRides ?? 0,
             vehicleColor: vehicle.vehicleColor ?? "",
             model: vehicle.model ?? "",
-            seatingCapacity: vehicle.seatingCapacity ?? ""
+            seatingCapacity: vehicle.seatingCapacity ?? "",
+            status: captain.status ?? "inactive"
         }));
     }
     const cookieStore = await cookies();
@@ -72,6 +73,7 @@ export async function GET(req) {
         totalRides: captain.totalRides ?? 0,
         vehicleColor: vehicle.vehicleColor ?? "",
         model: vehicle.model ?? "",
-        seatingCapacity: vehicle.seatingCapacity ?? ""
+        seatingCapacity: vehicle.seatingCapacity ?? "",
+        status: captain.status ?? "inactive"
     }));
 }
