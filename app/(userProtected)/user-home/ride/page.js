@@ -84,6 +84,9 @@ export default function DuringRide() {
             if (status === "ongoing" || status === "completed") {
                 refetch();
             }
+            if (status === "completed") {
+                router.replace("/user-home/ride-completion?rideId=" + rideId);
+            }
         };
 
         socket.on("status", handleStatus);
@@ -144,7 +147,7 @@ export default function DuringRide() {
                             dropAddress={captain?.dropLocation}
                         />
                     )}
-                </div>  
+                </div>
 
                 {/* Floating Top Banner */}
                 <div className="pt-20 md:pt-0 absolute top-6 left-1/2 -translate-x-1/2 w-[90%] md:w-auto z-10">

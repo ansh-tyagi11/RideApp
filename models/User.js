@@ -24,11 +24,8 @@ const UserSchema = new Schema({
             seatingCapacity: Number,
         },
         location: {
-            type: {
-                type: { type: String, enum: ["Point"], default: "Point" },
-                coordinates: { type: [Number], default: [0, 0] },
-            },
-            default: {},
+            type: { type: String, enum: ["Point"], default: "Point" },
+            coordinates: { type: [Number], default: [0, 0] },
         },
         rating: { type: Number, default: 0 },
         totalRides: { type: Number, default: 0 }

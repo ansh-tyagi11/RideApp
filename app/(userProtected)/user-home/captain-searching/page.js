@@ -20,6 +20,12 @@ export default function CaptainSearchingPage() {
 
         socket.emit("roomId", rideId);
 
+        riderLocation();
+
+        socket.on("noCaptains", () => {
+            toast.error("No drivers available nearby. Please try again later.");
+        });
+
         socket.on("redirect", (rideId) => {
             sessionStorage.setItem("activeRideId", rideId);
             router.push(`/user-home/ride?rideId=${rideId}`)
@@ -55,14 +61,27 @@ export default function CaptainSearchingPage() {
         setDrop(data.dropLocation);
         setAmount(data.amount);
 
-        if (data.status === "accepted") {
-            router.push(`/user-home/ride?rideId=${rideId}`);
-        }
+        if (data.status === "accepted") return router.push(`/user-home/ride?rideId=${rideId}`);
+        if (data.status === "cancelled") return router.push("/user-home/ride-selection");
 
-        if (data.status === "cancelled") {
-            router.push("/user-home/ride-selection");
-        }
+        navigator.geolocation.getCurrentPosition((position) => {
+            socket.emit("findRide", {
+                rideId,
+                latitude: position.coords.latitude,
+                longitude: position.coords.longitude,
+                pickup: data.pickupLocation,
+                drop: data.dropLocation,
+                amount: data.amount,
+            });
+        });
     };
+
+    const riderLocation = () => {
+        let location = navigator.geolocation.getCurrentPosition((position) => {
+            console.log(position.coords.latitude, position.coords.longitude)
+            socket.emit("findRide", { latitude: position.coords.latitude, longitude: position.coords.longitude, pickup, drop, amount, });
+        })
+    }
 
     if (loading || !user) {
         return (
