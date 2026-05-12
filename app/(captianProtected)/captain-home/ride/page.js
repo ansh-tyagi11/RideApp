@@ -6,6 +6,7 @@ import { forRiderInfo, forVerifyRideId } from '@/actions/useractions';
 import { useRideId } from '@/hooks/rideId';
 import socket from '@/lib/socket';
 import { useQuery } from '@tanstack/react-query';
+import fmtTime from '@/services/helper';
 
 const rideSteps = ['accepted', 'arriving', 'ongoing', 'completed'];
 
@@ -81,7 +82,10 @@ export default function CaptainDuringRide() {
             if (idx === -1) return;
             setStepIdx((prev) => (prev === idx ? prev : idx));
             if (status === "ongoing" || status === "completed") refetch();
-            if (status === "completed") stopTracking();
+            if (status === "completed") {
+                sessionStorage.removeItem("activeRideId");
+                stopTracking();
+            }
         };
 
         const stopTracking = () => {
@@ -142,7 +146,7 @@ export default function CaptainDuringRide() {
             socket.off("status", handleStatus);
             socket.off("reconnect", handleReconnect);
         };
-    }, [rideId, refetch,socket]);
+    }, [rideId, refetch, socket]);
 
     const advanceStep = () => {
 
@@ -187,14 +191,6 @@ export default function CaptainDuringRide() {
     }
 
     const isRiderLoading = isLoading || !rider;
-
-    const fmtTime = (time) => {
-        const h = Math.floor(time / 60);
-        const m = time % 60;
-        if (h === 0) return `${m}min`;
-        if (m === 0) return `${h}h`;
-        return `${h}h ${m}min`;
-    }
 
     return (
         <div className="bg-[#f6f7f8] dark:bg-[#101a22] text-[#111518] font-display h-screen w-screen md:overflow-hidden flex relative flex-col md:flex-row overflow-x-hidden">

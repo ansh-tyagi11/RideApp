@@ -76,9 +76,9 @@ export async function GET(req) {
         return NextResponse.json({ success: false, message: "Ride not found" })
     }
 
-    const { pickupLocation, dropLocation, amount } = ride;
+    const { pickupLocation, dropLocation, amount, distance, duration } = ride;
 
-    return NextResponse.json({ success: true, pickupLocation: pickupLocation, dropLocation: dropLocation, amount: amount });
+    return NextResponse.json({ success: true, pickupLocation: pickupLocation, dropLocation: dropLocation, amount: amount, distance: distance, duration: duration });
 }
 
 export async function PUT(req) {

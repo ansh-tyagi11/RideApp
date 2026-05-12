@@ -129,7 +129,7 @@ const captainNavbar = () => {
                                 />
 
                                 {profileOpen && (
-                                    <div className="absolute top-14 right-0 bg-[#f6f7f8] rounded-2xl p-4 shadow-lg w-64 z-[60]">
+                                    <div className="absolute top-14 right-0 bg-[#f6f7f8] rounded-2xl p-4 shadow-lg w-64 z-60">
                                         <div className="text-sm font-semibold text-slate-800 bg-white mb-2 w-full p-3 rounded-xl shadow-sm">
                                             Hi, {user.name}
                                         </div>
@@ -158,7 +158,7 @@ const captainNavbar = () => {
                 <div className="md:hidden block pointer-events-auto">
                     <span
                         onClick={toggleSidebar}
-                        className="fixed top-7 right-11 cursor-pointer z-[60]">
+                        className="fixed top-7 right-11 cursor-pointer z-60">
                         <img
                             src={user.image || `https://ui-avatars.com/api/?name=${user.name}`}
                             alt="captain-profile"

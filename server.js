@@ -101,7 +101,7 @@ rideStatus.on("connection", (socket) => {
     });
 
     socket.on("findRide", async (rideLocation) => {
-        const { latitude, longitude, pickup, drop, amount, rideId } = rideLocation;
+        const { latitude, longitude, pickup, drop, amount, rideId, distance, duration } = rideLocation;
 
         console.log("Finding captains near:", latitude, longitude);
 
@@ -135,6 +135,8 @@ rideStatus.on("connection", (socket) => {
                         pickup,
                         drop,
                         amount,
+                        distance,
+                        duration,
                         passengerLocation: { latitude, longitude }
                     });
                 }

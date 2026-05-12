@@ -72,6 +72,8 @@ export default function CaptainSearchingPage() {
                 pickup: data.pickupLocation,
                 drop: data.dropLocation,
                 amount: data.amount,
+                distance: data.distance,
+                duration: data.duration
             });
         });
     };
